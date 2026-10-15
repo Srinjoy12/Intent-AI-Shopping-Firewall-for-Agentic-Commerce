@@ -360,19 +360,42 @@ export default function App() {
         />
       </section>
 
-      {/* Clean PayPal Enterprise Footer */}
-      <footer className="app-footer">
-        <div className="footer-content">
-          <div className="footer-left">
-            <span className="footer-brand">PayPal Intent</span>
-            <span className="footer-copy">&copy; 2026 PayPal AI Hackathon Submission &bull; Agentic Commerce Security Firewall</span>
+      {/* Official PayPal Multi-Tier Global Footer */}
+      <footer className="paypal-global-footer">
+        <div className="footer-tier-1">
+          <div className="footer-links-group">
+            <a href="https://www.paypal.com/in/cshelp/personal" target="_blank" rel="noreferrer">Help</a>
+            <a href="https://www.paypal.com/in/smarthelp/contact-us" target="_blank" rel="noreferrer">Contact Us</a>
+            <a href="https://www.paypal.com/in/business/paypal-business-fees" target="_blank" rel="noreferrer">Fees</a>
+            <a href="https://www.paypal.com/in/webapps/mpp/paypal-safety-and-security" target="_blank" rel="noreferrer">Security</a>
+            <a href="https://developer.paypal.com" target="_blank" rel="noreferrer">Developers</a>
+            <a href="https://www.paypal.com/in/brc/" target="_blank" rel="noreferrer">Business Resource Center</a>
           </div>
-          <div className="footer-right">
-            <span>Channel3 API</span>
-            <span className="footer-sep">&bull;</span>
-            <span>PayPal Sandbox Advanced Checkout</span>
-            <span className="footer-sep">&bull;</span>
-            <span>AG Grid v36</span>
+          <div className="footer-flag-group">
+            <span className="country-flag-icon">🇮🇳</span>
+            <span className="country-name">India &bull; English</span>
+          </div>
+        </div>
+
+        <div className="footer-divider-line"></div>
+
+        <div className="footer-tier-2">
+          <div className="footer-sub-links">
+            <a href="https://about.pypl.com" target="_blank" rel="noreferrer">About</a>
+            <a href="https://newsroom.paypal-corp.com" target="_blank" rel="noreferrer">Newsroom</a>
+            <a href="https://careers.pypl.com" target="_blank" rel="noreferrer">Jobs</a>
+            <a href="https://investor.pypl.com" target="_blank" rel="noreferrer">Investor Relations</a>
+            <a href="https://www.paypal.com/in/business" target="_blank" rel="noreferrer">Partners</a>
+          </div>
+
+          <div className="footer-compliance-row">
+            <span className="copyright-text">&copy; 2026 PayPal, Inc. All rights reserved. &bull; Intent AI Firewall for Agentic Commerce</span>
+            <div className="legal-links">
+              <a href="https://www.paypal.com/in/webapps/mpp/accessibility" target="_blank" rel="noreferrer">Accessibility</a>
+              <a href="https://www.paypal.com/myaccount/privacy/cookiePrefs" target="_blank" rel="noreferrer">Cookies</a>
+              <a href="https://www.paypal.com/privacy-center" target="_blank" rel="noreferrer">Privacy</a>
+              <a href="https://www.paypal.com/in/legalhub/home" target="_blank" rel="noreferrer">Legal</a>
+            </div>
           </div>
         </div>
       </footer>
