@@ -360,13 +360,21 @@ export default function App() {
         />
       </section>
 
-      {/* Footer */}
-      <footer className="app-footer font-mono">
-        <span>INTENT // SUBMISSION FOR PAYPAL AI HACKATHON 2026</span>
-        <span>•</span>
-        <span>CHANNEL3 AUTHORITATIVE CATALOG + PAYPAL SANDBOX</span>
-        <span>•</span>
-        <span>MIT LICENSED</span>
+      {/* Clean PayPal Enterprise Footer */}
+      <footer className="app-footer">
+        <div className="footer-content">
+          <div className="footer-left">
+            <span className="footer-brand">PayPal Intent</span>
+            <span className="footer-copy">&copy; 2026 PayPal AI Hackathon Submission &bull; Agentic Commerce Security Firewall</span>
+          </div>
+          <div className="footer-right">
+            <span>Channel3 API</span>
+            <span className="footer-sep">&bull;</span>
+            <span>PayPal Sandbox Advanced Checkout</span>
+            <span className="footer-sep">&bull;</span>
+            <span>AG Grid v36</span>
+          </div>
+        </div>
       </footer>
     </div>
   )

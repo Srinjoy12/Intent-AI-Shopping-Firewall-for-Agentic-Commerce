@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CreditCard, CheckCircle, RefreshCw, RotateCcw, Lock, ShieldCheck, AlertCircle } from 'lucide-react'
+import { CreditCard, CheckCircle2, RefreshCw, RotateCcw, ShieldCheck, ShieldAlert, Lock } from 'lucide-react'
 
 export default function PayPalPanel({
   evaluation,
@@ -35,62 +35,68 @@ export default function PayPalPanel({
     <div className="paypal-panel-container">
       <div className="paypal-panel-header">
         <div className="paypal-header-left">
-          <CreditCard size={18} className="paypal-logo-icon" />
-          <h3 className="paypal-title">PayPal Sandbox Payment Settlement</h3>
+          <div className="paypal-icon-box">
+            <span className="paypal-p">P</span>
+          </div>
+          <div>
+            <h3 className="paypal-title">PayPal Sandbox Settlement</h3>
+            <span className="paypal-subtitle">Secure Merchant Gateway</span>
+          </div>
         </div>
-        <span className="paypal-env-tag font-mono">SANDBOX GATEWAY</span>
+        <span className="paypal-env-pill">Sandbox Mode</span>
       </div>
 
       <div className="paypal-panel-body">
+        {/* Blocked State */}
         {isBlocked && (
-          <div className="paypal-state-blocked">
-            <Lock size={20} className="text-danger" />
-            <div className="state-text">
-              <h4 className="state-title">Payment Intercepted & Halted</h4>
-              <p className="state-desc">
-                Because deterministic rules failed, the gateway terminated before contacting PayPal.
-                No credit card charges or PayPal authorizations were attempted. Zero risk of account drain.
-              </p>
+          <div className="settlement-state-card blocked">
+            <div className="state-icon-row">
+              <Lock size={18} className="text-danger" />
+              <h4 className="state-heading">Transaction Intercepted &bull; $0 Charged</h4>
             </div>
+            <p className="state-text">
+              Deterministic firewall rules failed. Execution terminated at the trust boundary before constructing payment parameters. Zero funds were authorized or captured on PayPal Sandbox.
+            </p>
           </div>
         )}
 
+        {/* Ready for Human Approval (Outcome B) */}
         {isVerified && (
-          <div className="paypal-state-ready">
-            <div className="flex items-center gap-2 mb-2 p-2 bg-sky-950/60 border border-sky-800/80 rounded text-sky-300 text-xs font-mono">
-              <ShieldCheck size={16} className="text-sky-400 shrink-0" />
-              <span>Outcome B: Subtotal &gt; $1,000.00 auto-approve threshold. Cleared by Gateway &bull; Pending 1-click human approval.</span>
+          <div className="settlement-state-card ready">
+            <div className="outcome-notice-box">
+              <ShieldCheck size={16} className="text-paypal-blue shrink-0" />
+              <span>
+                <strong>Outcome B Hold:</strong> Subtotal (${evaluation.computed_subtotal} USD) exceeds the $1,000 auto-capture threshold. Rules verified safe &bull; Pending 1-click human authorization.
+              </span>
             </div>
 
-            <div className="order-details-grid">
-              <div className="detail-item">
-                <span className="detail-label font-mono">PAYPAL ORDER ID:</span>
-                <span className="detail-val font-mono highlight">
-                  {evaluation.paypal_order_id || 'PENDING_INIT'}
+            <div className="transaction-summary-grid">
+              <div className="summary-item">
+                <span className="summary-label">PayPal Order ID</span>
+                <span className="summary-value font-mono highlight">
+                  {evaluation.paypal_order_id || 'PENDING'}
                 </span>
               </div>
 
-              <div className="detail-item">
-                <span className="detail-label font-mono">VERIFIED AMOUNT:</span>
-                <span className="detail-val font-mono text-emerald-400 font-bold">
+              <div className="summary-item">
+                <span className="summary-label">Verified Total</span>
+                <span className="summary-value font-mono text-success">
                   ${evaluation.computed_subtotal} USD
                 </span>
               </div>
 
-              <div className="detail-item">
-                <span className="detail-label font-mono">PAYPAL STATUS:</span>
-                <span className="detail-val font-mono status-ready">
-                  APPROVED_FOR_CAPTURE
+              <div className="summary-item">
+                <span className="summary-label">Gateway Status</span>
+                <span className="summary-value status-badge ready">
+                  Approved for Capture
                 </span>
               </div>
             </div>
 
-            <p className="pricing-note font-mono">{evaluation.pricing_note}</p>
-
             <button
               id="btn-capture-paypal"
               type="button"
-              className="btn-capture-paypal"
+              className="btn-paypal-gold full-width"
               disabled={isCapturing || !evaluation.paypal_order_id}
               onClick={() => onCaptureOrder(evaluation.paypal_order_id)}
             >
@@ -101,96 +107,114 @@ export default function PayPalPanel({
                 </>
               ) : (
                 <>
-                  <CheckCircle size={15} />
-                  <span>Approve & Capture Order on Sandbox (${evaluation.computed_subtotal} USD)</span>
+                  <CheckCircle2 size={16} />
+                  <span>Approve &amp; Capture ${evaluation.computed_subtotal} on PayPal</span>
                 </>
               )}
             </button>
           </div>
         )}
 
+        {/* Captured State */}
         {isCaptured && !isRefunded && (
-          <div className="paypal-state-captured">
-            <div className="captured-header">
-              <CheckCircle size={20} className="text-success" />
-              <h4>Payment Captured Successfully</h4>
+          <div className="settlement-state-card captured">
+            <div className="state-icon-row">
+              <CheckCircle2 size={18} className="text-success" />
+              <h4 className="state-heading text-success">Payment Captured Successfully</h4>
             </div>
 
-            <div className="captured-details">
-              <div className="detail-item">
-                <span className="detail-label font-mono">CAPTURE ID:</span>
-                <span className="detail-val font-mono">
+            <div className="transaction-summary-grid">
+              <div className="summary-item">
+                <span className="summary-label">PayPal Order ID</span>
+                <span className="summary-value font-mono">
+                  {evaluation.paypal_order_id}
+                </span>
+              </div>
+
+              <div className="summary-item">
+                <span className="summary-label">Capture ID</span>
+                <span className="summary-value font-mono text-success">
                   {evaluation.paypal_capture_id || 'CAP_SANDBOX_SUCCESS'}
                 </span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label font-mono">SETTLEMENT:</span>
-                <span className="detail-val font-mono text-emerald-400">COMPLETED</span>
+
+              <div className="summary-item">
+                <span className="summary-label">Settlement</span>
+                <span className="summary-value status-badge success">
+                  Completed
+                </span>
               </div>
             </div>
 
-            <div className="refund-action-wrap">
+            <div className="refund-bar">
               <button
                 id="btn-refund-paypal"
                 type="button"
-                className="btn-refund-paypal"
+                className="btn-refund-action"
                 disabled={isRefunding || isRefunded}
                 onClick={handleRefund}
               >
                 {isRefunding ? (
                   <>
-                    <RefreshCw size={14} className="spin-icon" />
-                    <span>Processing Sandbox Refund...</span>
+                    <RefreshCw size={13} className="spin-icon" />
+                    <span>Processing Refund...</span>
                   </>
                 ) : (
                   <>
-                    <RotateCcw size={14} />
-                    <span>Issue Full Refund on Sandbox</span>
+                    <RotateCcw size={13} />
+                    <span>Issue 100% Sandbox Refund</span>
                   </>
                 )}
               </button>
 
-              {refundError && (
-                <span className="text-xs text-rose-400 font-mono">
-                  ✕ {refundError}
-                </span>
-              )}
+              <span className="refund-guarantee">
+                Safe test mode &bull; Fully reversible with 1 click
+              </span>
             </div>
+
+            {refundError && (
+              <span className="refund-error-msg">
+                ✕ {refundError}
+              </span>
+            )}
           </div>
         )}
 
+        {/* Refunded State */}
         {isRefunded && (
-          <div className="paypal-state-captured border-purple-800/80 bg-purple-950/20">
-            <div className="captured-header">
-              <RotateCcw size={20} className="text-purple-400" />
-              <h4 className="text-purple-300">Payment 100% Refunded on Sandbox</h4>
+          <div className="settlement-state-card refunded">
+            <div className="state-icon-row">
+              <RotateCcw size={18} className="text-purple-600" />
+              <h4 className="state-heading text-purple-900">Payment 100% Refunded on Sandbox</h4>
             </div>
 
-            <div className="captured-details">
-              <div className="detail-item">
-                <span className="detail-label font-mono">ORIGINAL CAPTURE:</span>
-                <span className="detail-val font-mono">
+            <div className="transaction-summary-grid">
+              <div className="summary-item">
+                <span className="summary-label">Capture Ref</span>
+                <span className="summary-value font-mono">
                   {evaluation?.paypal_capture_id || refundStatus?.capture_id}
                 </span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label font-mono">STATUS:</span>
-                <span className="detail-val font-mono text-purple-300 font-bold">REFUNDED</span>
+
+              <div className="summary-item">
+                <span className="summary-label">Status</span>
+                <span className="summary-value status-badge refunded">
+                  Refunded
+                </span>
               </div>
             </div>
 
-            <div className="refund-action-wrap">
-              <span className="refund-success-note font-mono text-purple-300">
-                ✓ Full refund confirmed on PayPal Sandbox. 100% reversible demo.
-              </span>
-            </div>
+            <p className="refund-confirmation">
+              ✓ Funds returned to Sandbox account. Zero net balance change.
+            </p>
           </div>
         )}
 
+        {/* Idle State */}
         {!evaluation && (
-          <div className="paypal-state-idle">
-            <p className="idle-text">
-              Run an attack preset, legitimate order, or autonomous self-healing loop to test PayPal Sandbox settlement.
+          <div className="settlement-idle-box">
+            <p className="idle-prompt">
+              Select an attack scenario or verified purchase to view live PayPal Sandbox payment processing.
             </p>
           </div>
         )}

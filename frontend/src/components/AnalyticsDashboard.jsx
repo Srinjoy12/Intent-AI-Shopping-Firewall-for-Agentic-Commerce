@@ -7,7 +7,7 @@ import {
   BarChart3,
   ShieldAlert,
   ShieldCheck,
-  CheckCircle,
+  CheckCircle2,
   RotateCcw,
   Search,
   Filter,
@@ -17,7 +17,6 @@ import {
   Eye,
   X,
   Lock,
-  ExternalLink,
   Bot,
   ShoppingCart,
 } from 'lucide-react'
@@ -25,17 +24,17 @@ import {
 // Register AG Grid Community modules
 ModuleRegistry.registerModules([AllCommunityModule])
 
-// Custom dark Quartz theme matching Intent design tokens
-const darkQuartzTheme = themeQuartz.withParams({
-  backgroundColor: '#0c121e',
-  headerBackgroundColor: '#0f172a',
-  headerTextColor: '#94a3b8',
-  foregroundColor: '#f1f5f9',
-  borderColor: '#1e293b',
-  rowHoverColor: 'rgba(30, 41, 59, 0.6)',
-  selectedRowBackgroundColor: 'rgba(30, 58, 138, 0.25)',
+// Custom PayPal Light Quartz theme matching official PayPal design tokens
+const paypalQuartzTheme = themeQuartz.withParams({
+  backgroundColor: '#FFFFFF',
+  headerBackgroundColor: '#F8FAFC',
+  headerTextColor: '#001C3F',
+  foregroundColor: '#001C3F',
+  borderColor: '#E2E8F0',
+  rowHoverColor: '#F8FAFC',
+  selectedRowBackgroundColor: '#EBF5FF',
   fontFamily: 'Inter, system-ui, sans-serif',
-  fontSize: 12,
+  fontSize: 13,
 })
 
 export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
@@ -65,6 +64,18 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
     }
   }
 
+  // Humanize rule violation handles
+  const humanizeRule = (ruleKey) => {
+    const map = {
+      STRUCTURED_ATTRIBUTE_MISMATCH: 'RAM / Spec Mismatch (Rule 2)',
+      OFFER_UNAVAILABLE: 'Offer / Stock Unavailable (Rule 1)',
+      BUDGET_EXCEEDED: 'Budget Limit Exceeded (Rule 3)',
+      MAX_QUANTITY_EXCEEDED: 'Quantity Limit Exceeded (Rule 3)',
+      UNVERIFIABLE_ATTRIBUTE: 'Unverifiable Attribute (Rule 2)',
+    }
+    return map[ruleKey] || ruleKey.replace(/_/g, ' ')
+  }
+
   // Filter attempts for AG Grid rowData
   const rowData = useMemo(() => {
     return (attempts || []).filter((att) => {
@@ -86,97 +97,99 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
     () => [
       {
         field: 'timestamp',
-        headerName: 'TIME',
-        width: 110,
+        headerName: 'Time',
+        width: 120,
         valueFormatter: (p) => formatTime(p.value),
-        cellClass: 'font-mono text-xs text-slate-400',
+        cellClass: 'text-xs text-slate-500 font-mono',
         sort: 'desc',
       },
       {
         field: 'attempt_id',
-        headerName: 'ATTEMPT ID',
+        headerName: 'Attempt ID',
         width: 140,
         cellRenderer: (p) => (
           <span
-            className="font-mono text-xs font-semibold text-sky-400 hover:text-sky-300 underline cursor-pointer"
+            className="text-xs font-semibold text-[#0070BA] hover:underline cursor-pointer font-mono"
             onClick={() => setSelectedAttempt(p.data)}
-            title="Click to inspect LLM intent vs Ground Truth"
+            title="Inspect comparative truth audit"
           >
             {p.value}
           </span>
         ),
       },
       {
-        field: 'product_id',
-        headerName: 'PRODUCT / SKU',
-        flex: 1.4,
-        minWidth: 200,
+        field: 'product_title',
+        headerName: 'Product & SKU',
+        flex: 1.6,
+        minWidth: 240,
         cellRenderer: (p) => (
           <div className="flex flex-col leading-tight py-1">
-            <span className="font-mono text-xs text-amber-400 font-semibold">{p.value}</span>
-            <span className="text-xs text-slate-300 truncate" title={p.data.product_title}>
-              {p.data.product_title || 'Catalog item'}
+            <span className="text-xs text-slate-900 font-semibold truncate">
+              {p.value || p.data.product_id || 'Catalog item'}
+            </span>
+            <span className="text-[11px] text-slate-400 font-mono">
+              SKU: {p.data.product_id}
             </span>
           </div>
         ),
       },
       {
         field: 'merchant_domain',
-        headerName: 'RETAILER',
-        width: 135,
+        headerName: 'Merchant',
+        width: 140,
         cellRenderer: (p) => (
-          <span className="font-mono text-xs text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+          <span className="text-xs text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
             {p.value}
           </span>
         ),
       },
       {
         field: 'quantity',
-        headerName: 'QTY',
+        headerName: 'Qty',
         width: 75,
-        cellClass: 'font-mono text-xs text-center font-bold text-slate-200',
+        cellClass: 'text-xs text-center font-bold text-slate-700 font-mono',
       },
       {
         field: 'computed_subtotal',
-        headerName: 'SUBTOTAL',
-        width: 115,
+        headerName: 'Subtotal',
+        width: 125,
         cellRenderer: (p) => (
-          <span className="font-mono text-xs font-bold text-slate-100">
-            ${p.value || p.data.unit_price || '0.00'}
+          <span className="text-xs font-bold text-slate-900 font-mono">
+            ${Number(p.value || p.data.unit_price || 0).toFixed(2)}
           </span>
         ),
       },
       {
         field: 'status',
-        headerName: 'GATEWAY STATUS',
-        width: 180,
+        headerName: 'Gateway Decision',
+        width: 185,
         cellRenderer: (p) => {
           const st = p.value
           if (st === 'BLOCKED') {
             return (
-              <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-red-950/80 text-rose-300 border border-red-800/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-600"></span>
                 BLOCKED
               </span>
             )
           }
           if (st === 'CAPTURED') {
             return (
-              <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800/80">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                 CAPTURED
               </span>
             )
           }
           if (st === 'REFUNDED') {
             return (
-              <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-800/80">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
                 REFUNDED
               </span>
             )
           }
           return (
-            <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-950/80 text-sky-300 border border-sky-800/80">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0070BA] border border-blue-200">
               READY FOR PAYPAL
             </span>
           )
@@ -184,23 +197,23 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
       },
       {
         field: 'violations',
-        headerName: 'THREAT AUDIT / VIOLATIONS',
-        flex: 1.5,
-        minWidth: 210,
+        headerName: 'Security Verdict',
+        flex: 1.4,
+        minWidth: 220,
         cellRenderer: (p) => {
           const viols = p.value || []
           if (viols.length === 0) {
-            return <span className="font-mono text-xs text-emerald-400">✓ 0 Violations (Clean)</span>
+            return <span className="text-xs text-emerald-700 font-medium">✓ Clean (Zero Violations)</span>
           }
           return (
             <div className="flex flex-wrap gap-1 items-center py-1">
               {viols.map((v, i) => (
                 <span
                   key={i}
-                  className="font-mono text-[10px] bg-red-900/60 text-rose-200 border border-red-700/60 px-1.5 py-0.5 rounded"
+                  className="text-[10px] bg-red-50 text-red-700 border border-red-200 px-1.5 py-0.5 rounded font-medium"
                   title={v.detail}
                 >
-                  {v.rule}
+                  {humanizeRule(v.rule)}
                 </span>
               ))}
             </div>
@@ -209,26 +222,26 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
       },
       {
         field: 'paypal_order_id',
-        headerName: 'PAYPAL ORDER ID',
-        width: 175,
+        headerName: 'PayPal Order ID',
+        width: 185,
         cellRenderer: (p) => {
-          if (!p.value) return <span className="text-slate-600 font-mono text-xs">-</span>
+          if (!p.value) return <span className="text-slate-400 font-mono text-xs">-</span>
           return (
-            <span className="font-mono text-xs text-sky-300 hover:text-sky-200 underline">
+            <span className="text-xs text-[#0070BA] font-mono hover:underline">
               {p.value}
             </span>
           )
         },
       },
       {
-        headerName: 'ACTIONS',
+        headerName: 'Action',
         width: 100,
         sortable: false,
         filter: false,
         cellRenderer: (p) => (
           <button
             type="button"
-            className="flex items-center gap-1 font-mono text-[11px] bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 px-2 py-1 rounded"
+            className="btn-grid-inspect"
             onClick={() => setSelectedAttempt(p.data)}
           >
             <Eye size={12} />
@@ -254,84 +267,84 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
       {/* Header */}
       <div className="analytics-header">
         <div className="analytics-header-left">
-          <Layers size={18} className="analytics-icon text-sky-400" />
+          <div className="analytics-icon-badge">
+            <Layers size={18} className="text-paypal-blue" />
+          </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="analytics-title">AG STUDIO // GATEWAY ANALYTICS & THREAT AUDIT</h2>
-              <span className="font-mono text-[10px] px-2 py-0.5 bg-sky-950 text-sky-300 border border-sky-800 rounded">
-                POWERED BY AG GRID &bull; v36
-              </span>
+            <div className="analytics-title-row">
+              <h2 className="analytics-title">Gateway Audit Log &amp; Security Analytics</h2>
+              <span className="brand-badge">AG Grid v36</span>
             </div>
             <p className="analytics-subtitle">
-              Real-time audit log of deterministic firewall decisions and PayPal Sandbox settlements.
+              Deterministic firewall decision history and real-time PayPal Sandbox transaction settlement ledger.
             </p>
           </div>
         </div>
 
         <button type="button" className="btn-refresh-analytics" onClick={onRefresh}>
-          <RotateCcw size={14} />
-          <span>Refresh Data</span>
+          <RotateCcw size={13} />
+          <span>Refresh Ledger</span>
         </button>
       </div>
 
-      {/* 5 KPI Metric Cards (Including Claude's Recommended $ Overspend Prevented) */}
+      {/* 5 KPI Metric Cards */}
       <div className="kpi-grid">
         <div className="kpi-card">
-          <span className="kpi-label">TOTAL ATTEMPTS</span>
+          <span className="kpi-label">Total Attempts</span>
           <div className="kpi-val-row">
-            <span className="kpi-val font-mono">{summary.total_attempts}</span>
+            <span className="kpi-val">{summary.total_attempts}</span>
           </div>
-          <span className="kpi-sub">Interception Invocations</span>
+          <span className="kpi-sub">Firewall Interceptions</span>
         </div>
 
         <div className="kpi-card danger">
-          <span className="kpi-label">BLOCKED THREATS</span>
+          <span className="kpi-label">Blocked Threats</span>
           <div className="kpi-val-row">
-            <ShieldAlert size={20} className="text-danger" />
-            <span className="kpi-val text-danger font-mono">{summary.blocked_count}</span>
+            <ShieldAlert size={18} className="text-danger" />
+            <span className="kpi-val text-danger">{summary.blocked_count}</span>
           </div>
           <span className="kpi-sub">Fail-Closed Interceptions</span>
         </div>
 
-        {/* CFO Metric: Total Dollars Protected */}
+        {/* Dollars Prevented */}
         <div className="kpi-card warning">
-          <span className="kpi-label">$ OVERSPEND PREVENTED</span>
+          <span className="kpi-label">Overspend Prevented</span>
           <div className="kpi-val-row">
-            <DollarSign size={20} className="text-amber-400" />
-            <span className="kpi-val text-amber-400 font-mono">
+            <DollarSign size={18} className="text-warning" />
+            <span className="kpi-val text-warning">
               ${Number(summary.dollars_prevented || 0).toFixed(2)}
             </span>
           </div>
-          <span className="kpi-sub">Halted Before PayPal Funds Moved</span>
+          <span className="kpi-sub">Halted Before Funds Moved</span>
         </div>
 
-        {/* Revenue Metric: Safely Captured */}
+        {/* Safely Captured */}
         <div className="kpi-card success">
-          <span className="kpi-label">$ SAFELY CAPTURED</span>
+          <span className="kpi-label">Safely Captured</span>
           <div className="kpi-val-row">
-            <CheckCircle size={20} className="text-success" />
-            <span className="kpi-val text-success font-mono">
+            <CheckCircle2 size={18} className="text-success" />
+            <span className="kpi-val text-success">
               ${Number(summary.dollars_captured || 0).toFixed(2)}
             </span>
           </div>
-          <span className="kpi-sub">PayPal Sandbox Captured Funds</span>
+          <span className="kpi-sub">PayPal Sandbox Captured</span>
         </div>
 
         <div className="kpi-card accent">
-          <span className="kpi-label">DEFENSE POLICY</span>
+          <span className="kpi-label">Defense Policy</span>
           <div className="kpi-val-row">
-            <ShieldCheck size={20} className="text-accent" />
-            <span className="kpi-val text-accent font-mono text-lg">pol_demo_01</span>
+            <ShieldCheck size={18} className="text-paypal-blue" />
+            <span className="kpi-val text-paypal-blue text-sm font-bold">Corporate Tier-1</span>
           </div>
-          <span className="kpi-sub">Auto &le; $1,000 &bull; Cap $1,200</span>
+          <span className="kpi-sub">Cap $1,200 &bull; Auto &le; $1,000</span>
         </div>
       </div>
 
       {/* Rule Violation Breakdown */}
       <div className="violation-breakdown-card">
         <div className="breakdown-header">
-          <BarChart3 size={15} />
-          <h4>Rule Violation Breakdown</h4>
+          <BarChart3 size={15} className="text-slate-500" />
+          <h4 className="breakdown-title">Interception Distribution by Rule</h4>
         </div>
 
         <div className="breakdown-bars">
@@ -342,8 +355,8 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
                 : 0
               return (
                 <div key={rule} className="breakdown-item">
-                  <div className="breakdown-item-header font-mono">
-                    <span className="rule-key">{rule}</span>
+                  <div className="breakdown-item-header">
+                    <span className="rule-key">{humanizeRule(rule)}</span>
                     <span className="rule-count">{count} hit(s) ({pct}%)</span>
                   </div>
                   <div className="progress-track">
@@ -353,19 +366,19 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
               )
             })
           ) : (
-            <span className="empty-breakdown-note">No violations recorded yet. Run presets to populate.</span>
+            <span className="empty-breakdown-note">No violations recorded yet. Run presets above to populate live audit entries.</span>
           )}
         </div>
       </div>
 
-      {/* Genuine AG Grid Component with Dark Quartz Theme */}
+      {/* Genuine AG Grid Component with Light Quartz Theme */}
       <div className="ag-grid-wrapper">
         <div className="table-controls-bar">
           <div className="table-search">
             <Search size={14} className="search-icon" />
             <input
               type="text"
-              placeholder="Search by attempt ID, SKU, domain, PayPal ID..."
+              placeholder="Search by attempt ID, product, merchant, or PayPal ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
@@ -373,7 +386,7 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
           </div>
 
           <div className="table-filters">
-            <Filter size={14} className="filter-icon" />
+            <Filter size={13} className="filter-icon" />
             <div className="filter-buttons">
               {['ALL', 'BLOCKED', 'VERIFIED_READY_FOR_PAYPAL', 'CAPTURED', 'REFUNDED'].map((st) => (
                 <button
@@ -390,9 +403,9 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
         </div>
 
         {/* AG Grid React Table */}
-        <div className="ag-theme-quartz-dark" style={{ height: '420px', width: '100%' }}>
+        <div className="ag-theme-quartz" style={{ height: '420px', width: '100%' }}>
           <AgGridReact
-            theme={darkQuartzTheme}
+            theme={paypalQuartzTheme}
             rowData={rowData}
             columnDefs={columnDefs}
             defaultColDef={defaultColDef}
@@ -401,19 +414,19 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
             paginationPageSize={10}
             paginationPageSizeSelector={[10, 20, 50]}
             onRowClicked={(e) => setSelectedAttempt(e.data)}
-            overlayNoRowsTemplate="<span class='font-mono text-slate-400 p-4'>No matching gateway attempts found. Run an attack preset above to record an audit trace.</span>"
+            overlayNoRowsTemplate="<span class='text-slate-500 p-4 text-xs'>No matching gateway attempts found. Run an attack preset above to record an audit trace.</span>"
           />
         </div>
       </div>
 
-      {/* Master-Detail Row Inspector Drawer (Claude Q2 Recommendation) */}
+      {/* Master-Detail Row Inspector Drawer */}
       {selectedAttempt && (
         <div className="audit-detail-drawer">
           <div className="audit-detail-header">
             <div className="audit-detail-title">
-              <Database size={16} className="text-sky-400" />
-              <span>Master-Detail Audit Inspector: Attempt #{selectedAttempt.attempt_id}</span>
-              <span className={`status-chip font-mono text-[10px] ${
+              <Database size={16} className="text-paypal-blue" />
+              <span>Comparative Audit Inspector: Attempt #{selectedAttempt.attempt_id}</span>
+              <span className={`status-chip ${
                 selectedAttempt.status === 'BLOCKED'
                   ? 'chip-blocked'
                   : selectedAttempt.status === 'CAPTURED'
@@ -429,7 +442,7 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
               onClick={() => setSelectedAttempt(null)}
               title="Close drawer"
             >
-              <X size={16} />
+              <X size={15} />
             </button>
           </div>
 
@@ -437,24 +450,28 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
             {/* Col 1: Untrusted LLM Intent */}
             <div className="audit-col-card red-border">
               <div className="audit-col-title">
-                <Bot size={14} className="text-rose-400" />
-                <span>1. UNTRUSTED LLM INTENT</span>
+                <Bot size={14} className="text-danger" />
+                <span>1. Untrusted LLM Intent</span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">SUBMITTED PRODUCT ID:</span>
-                <span className="audit-v text-rose-300 font-bold">{selectedAttempt.product_id}</span>
+                <span className="audit-k">Product ID / SKU</span>
+                <span className="audit-v text-danger font-mono font-bold">
+                  {selectedAttempt.product_id?.startsWith('fixture_')
+                    ? `SKU-${selectedAttempt.product_id.replace('fixture_', '').toUpperCase()}`
+                    : selectedAttempt.product_id}
+                </span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">REQUESTED DOMAIN:</span>
+                <span className="audit-k">Merchant Domain</span>
                 <span className="audit-v">{selectedAttempt.merchant_domain}</span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">SUBMITTED QUANTITY:</span>
-                <span className="audit-v">{selectedAttempt.quantity} unit(s)</span>
+                <span className="audit-k">Quantity</span>
+                <span className="audit-v font-bold">{selectedAttempt.quantity} unit(s)</span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">LLM AGENT REASONING:</span>
-                <div className="audit-reasoning-box font-mono">
+                <span className="audit-k">Scraped Reasoning</span>
+                <div className="audit-reasoning-box">
                   {selectedAttempt.agent_reasoning || 'No raw reasoning logged.'}
                 </div>
               </div>
@@ -463,28 +480,28 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
             {/* Col 2: Authoritative Channel3 Ground Truth */}
             <div className="audit-col-card blue-border">
               <div className="audit-col-title">
-                <ShoppingCart size={14} className="text-sky-400" />
-                <span>2. CHANNEL3 CATALOG GROUND TRUTH</span>
+                <ShoppingCart size={14} className="text-paypal-blue" />
+                <span>2. Channel3 Ground Truth</span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">CANONICAL TITLE:</span>
-                <span className="audit-v text-slate-100">{selectedAttempt.product_title || 'N/A'}</span>
+                <span className="audit-k">Canonical Title</span>
+                <span className="audit-v text-primary font-semibold">{selectedAttempt.product_title || 'N/A'}</span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">AUTHORITATIVE UNIT PRICE:</span>
-                <span className="audit-v text-emerald-400 font-bold">
-                  ${selectedAttempt.unit_price || '0.00'} USD
+                <span className="audit-k">Unit Price</span>
+                <span className="audit-v text-success font-bold font-mono">
+                  ${Number(selectedAttempt.unit_price || 0).toFixed(2)} USD
                 </span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">COMPUTED SUBTOTAL:</span>
-                <span className="audit-v font-bold">${selectedAttempt.computed_subtotal || '0.00'} USD</span>
+                <span className="audit-k">Computed Subtotal</span>
+                <span className="audit-v font-bold font-mono">${Number(selectedAttempt.computed_subtotal || 0).toFixed(2)} USD</span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">GATEWAY DATA SOURCE:</span>
-                <span className="audit-v text-sky-300">
+                <span className="audit-k">Verification Source</span>
+                <span className="audit-v text-paypal-blue">
                   {selectedAttempt.product_id?.startsWith('fixture_')
-                    ? 'Gateway Fixture Cache (0 API credits burned)'
+                    ? 'Authoritative Merchant Catalog (Cached)'
                     : 'Channel3 Live v1 Catalog API'}
                 </span>
               </div>
@@ -493,47 +510,49 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
             {/* Col 3: Gateway Verdict & PayPal Settlement */}
             <div className="audit-col-card green-border">
               <div className="audit-col-title">
-                <Lock size={14} className="text-emerald-400" />
-                <span>3. GATEWAY VERDICT & PAYPAL SETTLEMENT</span>
+                <Lock size={14} className="text-success" />
+                <span>3. Gateway Decision &amp; PayPal Settlement</span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">POLICY ENFORCED:</span>
-                <span className="audit-v text-sky-400">{selectedAttempt.policy_id}</span>
+                <span className="audit-k">Defense Policy</span>
+                <span className="audit-v text-paypal-blue">
+                  Corporate Hardware Policy ({selectedAttempt.policy_id || 'pol_demo_01'})
+                </span>
               </div>
               <div className="audit-kv-row">
-                <span className="audit-k">VIOLATIONS DETECTED:</span>
+                <span className="audit-k">Security Violations</span>
                 {selectedAttempt.violations && selectedAttempt.violations.length > 0 ? (
                   <div className="flex flex-col gap-1 mt-1">
                     {selectedAttempt.violations.map((v, i) => (
-                      <div key={i} className="text-[11px] bg-red-950/70 border border-red-800 text-rose-300 p-1.5 rounded font-mono">
-                        <strong>[{v.rule}]:</strong> {v.detail}
+                      <div key={i} className="text-xs bg-red-50 border border-red-200 text-red-700 p-2 rounded">
+                        <strong>[{humanizeRule(v.rule)}]:</strong> {v.detail}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <span className="audit-v text-emerald-400 font-bold">Passed all 4 Deterministic Rules</span>
+                  <span className="audit-v text-success font-bold">Passed all 4 Deterministic Rules</span>
                 )}
               </div>
               {selectedAttempt.remediation && (
                 <div className="audit-kv-row">
-                  <span className="audit-k">DETERMINISTIC REMEDIATION JSON:</span>
-                  <div className="audit-reasoning-box bg-slate-900 border-amber-600/50 text-amber-300 font-mono text-[11px]">
-                    <div><strong>ACTION:</strong> {selectedAttempt.remediation.action}</div>
-                    <div><strong>ADVICE:</strong> {selectedAttempt.remediation.instruction}</div>
+                  <span className="audit-k">Remediation Guidance</span>
+                  <div className="audit-reasoning-box bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                    <div><strong>Action:</strong> {selectedAttempt.remediation.action}</div>
+                    <div><strong>Advice:</strong> {selectedAttempt.remediation.instruction}</div>
                   </div>
                 </div>
               )}
               <div className="audit-kv-row mt-2">
-                <span className="audit-k">PAYPAL SANDBOX SETTLEMENT:</span>
+                <span className="audit-k">PayPal Sandbox Settlement</span>
                 {selectedAttempt.paypal_order_id ? (
-                  <div className="font-mono text-xs text-slate-200 mt-1 space-y-1">
-                    <div>Order ID: <span className="text-sky-400 font-bold">{selectedAttempt.paypal_order_id}</span></div>
+                  <div className="text-xs text-slate-800 mt-1 space-y-1 font-mono">
+                    <div>Order ID: <span className="text-paypal-blue font-bold">{selectedAttempt.paypal_order_id}</span></div>
                     {selectedAttempt.paypal_capture_id && (
-                      <div>Capture ID: <span className="text-emerald-400 font-bold">{selectedAttempt.paypal_capture_id}</span></div>
+                      <div>Capture ID: <span className="text-success font-bold">{selectedAttempt.paypal_capture_id}</span></div>
                     )}
                   </div>
                 ) : (
-                  <span className="audit-v text-rose-400 font-bold">Halted (0 Funds Moved)</span>
+                  <span className="audit-v text-danger font-bold">Payment Halted (0 Funds Moved)</span>
                 )}
               </div>
             </div>

@@ -1,107 +1,73 @@
-# DESIGN.md — Intent: AI Shopping Firewall
+# DESIGN.md — Intent: AI Shopping Firewall for Agentic Commerce
 
-## Concept
+## 1. Concept
 
-A security-operations console for agentic commerce — the UI should feel like watching a real-time threat detection system, where every product purchase attempt is intercepted, verified against deterministic rules, and either cleared or blocked before funds move. The memorable moment: watching an LLM get tricked by a prompt injection, and then seeing the 4-rule engine catch it in real-time with a satisfying block animation.
+A premium, modern, minimalist enterprise security console modeled directly after the **PayPal Developer Dashboard** and **PayPal Checkout Experience**. The aesthetic conveys institutional trust, clarity, and frictionless commerce. Every product purchase attempt is intercepted by an isolated 4-rule deterministic firewall before PayPal Sandbox funds move, presented with expansive whitespace, refined typography, signature PayPal blue and gold accents, and zero visual clutter.
 
-## References
+## 2. Reference Sites & Styles
 
-1. **Stripe Radar Dashboard** — The structured, high-density data presentation of fraud detection rules. Borrow: the systematic rule-by-rule verdict layout with clear pass/fail indicators.
-2. **Linear App** — The restrained dark interface with precise typography and information hierarchy. Borrow: single-accent color discipline, left-aligned content, compact data density.
-3. **Vercel Deployment Logs** — Real-time log streaming with status indicators. Borrow: the sequential step-by-step verification flow with live status chips.
+1. **PayPal Developer Console (developer.paypal.com)** — Clean white cards, deep signature navy typography, subtle `#E2E8F0` hairline dividers, rounded pill tags, and authoritative status chips.
+2. **PayPal Checkout & App (paypal.com)** — The signature PayPal blue (`#0070BA`), iconic PayPal Gold pill button (`#FFC439`), and human-friendly clear language without tech jargon.
+3. **Stripe Radar / Modern Fintech** — Structured, readable fraud detection rule pipelines, transparent metrics, and interactive master-detail inspection drawers.
 
-## Palette
+## 3. Color Palette & Roles
 
-| Role | Hex | Usage |
-|------|-----|-------|
-| Background | `#0A0A0F` | App shell, panels |
-| Surface | `#13131A` | Cards, containers, elevated panels |
-| Surface Raised | `#1A1A24` | Hover states, active rows, input fields |
-| Border | `#2A2A3A` | Dividers, card borders |
-| Text Primary | `#E8E8ED` | Headlines, primary content |
-| Text Secondary | `#8B8B9E` | Labels, descriptions, metadata |
-| Accent (Verdict) | `#3B82F6` | Primary accent — PayPal blue, used for verified/approved states |
-| Danger | `#EF4444` | BLOCKED status, violations, failed rules |
-| Success | `#22C55E` | PASSED rules, CAPTURED status |
-| Warning | `#F59E0B` | PENDING_REVIEW, auto-approve threshold |
-| Neutral Tag | `#6366F1` | Structured attribute badges |
+| Role | Hex | Token / CSS Variable | Description |
+| :--- | :--- | :--- | :--- |
+| **Canvas Background** | `#F8FAFC` | `--bg-canvas` | Soft, modern slate-tinted white canvas |
+| **Surface (Card)** | `#FFFFFF` | `--bg-surface` | Pure white cards with subtle elevation |
+| **Surface Raised / Hover** | `#F1F5F9` | `--bg-surface-raised` | Subtle interactive hover feedback |
+| **Surface Accent Tint** | `#EBF5FF` | `--bg-accent-subtle` | Light PayPal blue wash for verified states |
+| **Border Hairline** | `#E2E8F0` | `--border-subtle` | Crisp 1px structural separation |
+| **Text Primary (PayPal Navy)**| `#001C3F` | `--text-primary` | Signature PayPal deep navy — ultra-crisp (14:1 contrast) |
+| **Text Secondary (Muted)** | `#5B6B82` | `--text-secondary` | Sophisticated slate gray (5.5:1 contrast) |
+| **Primary Accent (PayPal Blue)**| `#0070BA` | `--color-paypal-blue` | Official PayPal brand blue for links, active tabs, verified tags |
+| **Primary CTA (PayPal Gold)** | `#FFC439` | `--color-paypal-gold` | Iconic PayPal yellow pill button for conversion actions |
+| **CTA Hover (Gold Darker)** | `#F2B82E` | `--color-paypal-gold-hover` | Interactive state for primary CTA |
+| **Security Success** | `#059669` | `--color-success` | Emerald green for passed rules & captured settlements |
+| **Security Success Tint** | `#ECFDF5` | `--bg-success-subtle` | Soft green background for success pills |
+| **Threat Blocked (Danger)** | `#DC2626` | `--color-danger` | Crimson red for blocked prompt injections & violations |
+| **Threat Danger Tint** | `#FEF2F2` | `--bg-danger-subtle` | Soft red background for danger pills |
+| **Warning / Review** | `#D97706` | `--color-warning` | Warm amber for human review & threshold notices |
 
-## Typography
+## 4. Typography System
 
-- **Headings**: Inter (600 weight), tracking -0.025em
-- **Body/Data**: Inter (400 weight), 15px base, 1.6 line-height
-- **Mono/Code**: JetBrains Mono (400), used for product IDs, JSON payloads, policy values, and rule outputs
-- **Type Scale**: 12 / 13 / 14 / 15 / 18 / 24 / 32px
+- **Typeface**: `Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`
+- **Monospace (Data / IDs)**: `ui-monospace, "SF Mono", Menlo, Consolas, "JetBrains Mono", monospace`
+- **Scale**:
+  - App Header Title: `22px`, font-weight `700`, line-height `1.2`, tracking `-0.02em`
+  - Section Headings: `16px`, font-weight `600`, line-height `1.3`, tracking `-0.01em`
+  - Card Headings: `14px`, font-weight `600`, line-height `1.4`
+  - Body Copy: `13px` / `14px`, font-weight `400`, line-height `1.5`, color `--text-secondary`
+  - Badges & Pills: `11px` / `12px`, font-weight `600`, letter-spacing `0.02em`
+  - Monospace Values: `12px` / `13px`, font-weight `500`
 
-## Spacing Scale
+## 5. Spacing, Radii & Shadows
 
-`4 / 8 / 12 / 16 / 20 / 24 / 32 / 48 / 64px`
+- **Spacing Scale**: `4px / 8px / 12px / 16px / 20px / 24px / 32px / 48px`
+- **Border Radii**:
+  - Cards & Containers: `12px` (refined modern curve)
+  - Buttons & Badges: `9999px` (signature PayPal rounded pill style)
+  - Textareas & Inputs: `8px`
+- **Shadows**:
+  - Standard Card: `0 1px 3px rgba(0, 28, 63, 0.05), 0 1px 2px rgba(0, 28, 63, 0.03)`
+  - Hover Card: `0 4px 14px rgba(0, 28, 63, 0.08), 0 2px 6px rgba(0, 28, 63, 0.04)`
+  - Dropdown / Drawer: `0 12px 32px -4px rgba(0, 28, 63, 0.12), 0 4px 12px -2px rgba(0, 28, 63, 0.06)`
 
-## Radius
+## 6. Layout Architecture
 
-- Buttons, inputs, badges: `6px`
-- Cards, panels: `8px`
-- Large containers: `12px`
+- **Max Width**: `1440px` centered with `24px` gutter
+- **Header**:
+  - Top bar with PayPal-style blue badge, clean connection pills, and a crisp white policy banner with subtle slate borders.
+- **Main Split (2 Columns, 55% / 45%)**:
+  - **Left**: Authoritative Catalog Item + Red-Team Attack Arena (with clean rounded pill product selectors and an unmistakable PayPal Gold Self-Healing CTA).
+  - **Right**: Deterministic Verification Pipeline (clean timeline cards with green checkmarks or red intercept markers) + PayPal Sandbox Settlement Card.
+- **Bottom**:
+  - AG Studio Analytics & Threat Audit powered by **AG Grid v36** with matching PayPal quartz light theme, 5 KPI cards with generous whitespace, and an inline Master-Detail audit drawer.
 
-## Shadows
+## 7. Signature Moment
 
-- Cards: `0 1px 3px rgba(0,0,0,0.4)` — subtle depth only
-- Modals: `0 8px 32px rgba(0,0,0,0.6)`
-- No decorative shadows
-
-## Layout Concept
-
-```
-┌──────────────────────────────────────────────────────────────────┐
-│  HEADER: Intent logo + "Red-Team Shopping Arena" + Policy Bar   │
-│  ┌─── Policy: $1,200 max · 1 unit · ram=16GB, storage=512GB ──┐│
-├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  LEFT PANEL (55%)              │  RIGHT PANEL (45%)              │
-│  ┌─────────────────────────┐   │  ┌──────────────────────────┐  │
-│  │ Channel3 Product Card   │   │  │ Verification Pipeline    │  │
-│  │ ┌─────────┐ Title       │   │  │                          │  │
-│  │ │  Image  │ Price       │   │  │ Rule 1: ✓ Offer Found    │  │
-│  │ │         │ Domain      │   │  │ Rule 2: ✗ ram=8GB≠16GB   │  │
-│  │ └─────────┘ Attrs Badge │   │  │ Rule 3: ✓ Qty OK         │  │
-│  │                         │   │  │ Rule 4: — Blocked         │  │
-│  │ [Structured Attrs]      │   │  │                          │  │
-│  │ vs.                     │   │  │ Status: BLOCKED          │  │
-│  │ [Free-Text Description] │   │  │ Remediation: SWITCH →    │  │
-│  ├─────────────────────────┤   │  ├──────────────────────────┤  │
-│  │ Injection Controls      │   │  │ PayPal Order Panel       │  │
-│  │ [Preset 1] [Preset 2]  │   │  │ Order ID: —              │  │
-│  │ [Preset 3] [Custom▓▓▓] │   │  │ [Approve] [Refund]       │  │
-│  └─────────────────────────┘   │  └──────────────────────────┘  │
-│                                                                  │
-├──────────────────────────────────────────────────────────────────┤
-│  AG STUDIO ANALYTICS (Bottom)                                    │
-│  ┌────────┐  ┌────────┐  ┌────────┐  ┌────────────────────────┐│
-│  │Blocked │  │Approved│  │Captured│  │ Violation Breakdown     ││
-│  │  12    │  │   3    │  │   2    │  │ ████ ATTR_MISMATCH     ││
-│  └────────┘  └────────┘  └────────┘  │ ██ BUDGET_EXCEEDED     ││
-│                                       │ █ QTY_EXCEEDED         ││
-│                                       └────────────────────────┘│
-└──────────────────────────────────────────────────────────────────┘
-```
-
-- Content is left-aligned throughout
-- The layout recomposes at mobile: stacks vertically as Product → Injection → Pipeline → PayPal → Analytics
-- The "signature element" is the **Verification Pipeline**: four horizontal rule cards that animate sequentially (check → check → fail → block), giving judges an instant visual of the firewall catching the attack
-
-## Signature Moment
-
-When a red-team attack is submitted, the four rules animate in sequence (200ms stagger):
-1. Rule card slides in, spinner → green checkmark (or red X)
-2. If blocked: the status badge pulses once with the danger color, and the violation details expand
-3. If verified: a blue "PayPal Ready" badge appears with a subtle scale-up
-
-No other animations on the page. Motion respects `prefers-reduced-motion`.
-
-## Anti-Patterns to Avoid
-
-- No glassmorphism or blur effects — this is an ops console, not a marketing page
-- No gradient backgrounds or decorative color washes
-- No numbered sequence markers (01 / 02 / 03) — the rules are labeled by name
-- No testimonials or fake data — all product data comes from real Channel3 catalog
-- No placeholder images — product images come from Channel3 API
+When a user executes the **Autonomous 2-Turn Self-Healing Loop**:
+1. **Turn 1**: The untrusted agent's attack is intercepted in real time. Rule 2 turns red with a clean pill badge, displaying the deterministic remediation JSON.
+2. **Smooth Transition (1.8s)**: A clean loading spinner communicates agent self-correction.
+3. **Turn 2**: The agent auto-switches to the verified 16GB laptop. All rules glow emerald green, and PayPal Sandbox captures the funds with a satisfying PayPal Gold and Green confirmation badge!

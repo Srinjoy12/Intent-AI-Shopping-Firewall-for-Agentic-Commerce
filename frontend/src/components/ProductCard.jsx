@@ -1,5 +1,5 @@
 import React from 'react'
-import { Laptop, Database, AlertTriangle, ShieldCheck, Tag, ExternalLink } from 'lucide-react'
+import { Laptop, AlertTriangle, ShieldCheck, CheckCircle2, ShieldAlert } from 'lucide-react'
 
 export default function ProductCard({
   products,
@@ -18,24 +18,39 @@ export default function ProductCard({
   return (
     <div className="product-card-container">
       {/* Product Selector Bar */}
-      <div className="catalog-tabs">
-        <span className="catalog-tab-label">SELECT PRODUCT:</span>
-        <div className="catalog-pills">
+      <div className="product-selector-row">
+        <div className="selector-header">
+          <span className="selector-label">Catalog Items</span>
+          <span className="selector-hint">Select a product to inspect deterministic attributes</span>
+        </div>
+
+        <div className="selector-buttons">
           {products.map((p) => {
             const isSelected = p.product_id === selectedProductId
+            const isCompliant = p.product_id === 'fixture_laptop_16gb'
+            const isHighValue = p.product_id === 'fixture_laptop_high_value'
+            const hasNoRam = !p.structured_attributes?.ram
+
             return (
               <button
                 key={p.product_id}
                 type="button"
-                className={`catalog-pill ${isSelected ? 'active' : ''}`}
+                className={`selector-btn ${isSelected ? 'active' : ''}`}
                 onClick={() => onSelectProduct(p.product_id)}
               >
-                <Laptop size={14} />
-                <span>{p.title.split('-')[0].trim()}</span>
-                {p.structured_attributes?.ram ? (
-                  <span className="pill-spec font-mono">{p.structured_attributes.ram}</span>
-                ) : (
-                  <span className="pill-spec danger font-mono">NO RAM ATTR</span>
+                <Laptop size={14} className="selector-icon" />
+                <span className="selector-title">{p.title.split('-')[0].trim()}</span>
+                {isCompliant && (
+                  <span className="btn-tag success">16GB RAM · Safe</span>
+                )}
+                {isHighValue && (
+                  <span className="btn-tag warning">$1,099 · Review</span>
+                )}
+                {hasNoRam && (
+                  <span className="btn-tag danger">No RAM Handle</span>
+                )}
+                {!isCompliant && !isHighValue && !hasNoRam && (
+                  <span className="btn-tag">8GB RAM</span>
                 )}
               </button>
             )
@@ -44,43 +59,51 @@ export default function ProductCard({
       </div>
 
       {/* Main Product Card */}
-      <div className="product-details-card">
-        <div className="product-header-row">
+      <div className="product-details-content">
+        <div className="product-header-block">
           <div className="product-title-wrap">
-            <span className="product-id-tag font-mono">{currentProduct?.product_id}</span>
+            <div className="sku-breadcrumb">
+              <span className="sku-source">Channel3 Catalog</span>
+              <span className="sku-sep">/</span>
+              <span className="sku-code font-mono">
+                {currentProduct?.product_id?.startsWith('fixture_')
+                  ? `SKU-${currentProduct.product_id.replace('fixture_', '').toUpperCase()}`
+                  : `SKU-${currentProduct?.product_id?.toUpperCase()}`}
+              </span>
+            </div>
             <h2 className="product-title">{currentProduct?.title}</h2>
           </div>
-          <div className="product-price-box">
-            <span className="product-price-val font-mono">${currentOffer.price}</span>
-            <span className="product-price-cur">{currentOffer.currency}</span>
+          <div className="product-price-block">
+            <span className="product-price">${currentOffer.price}</span>
+            <span className="product-currency">{currentOffer.currency} · Free Delivery</span>
           </div>
         </div>
 
-        <div className="product-meta-row">
-          <div className="meta-badge domain">
-            <span className="meta-label">Retailer:</span>
-            <span className="meta-val font-mono">{currentOffer.domain}</span>
+        <div className="product-metadata-row">
+          <div className="meta-item">
+            <span className="meta-label">Merchant:</span>
+            <strong>{currentOffer.domain}</strong>
           </div>
-          <div className="meta-badge stock">
-            <span className="meta-label">Stock:</span>
-            <span className="meta-val font-mono">{currentOffer.availability}</span>
+          <div className="meta-item">
+            <span className="meta-label">Inventory:</span>
+            <strong className="text-success">{currentOffer.availability}</strong>
           </div>
-          <div className="meta-badge source">
-            <span className="meta-label">Data Source:</span>
-            <span className="meta-val">Channel3 Catalog</span>
+          <div className="meta-item">
+            <span className="meta-label">Data Authority:</span>
+            <strong>Channel3 Verified</strong>
           </div>
         </div>
 
-        {/* Comparison: Authoritative Structured Attributes vs Untrusted Free-Text */}
+        {/* Side-by-side Attribute Comparison */}
         <div className="attrs-comparison-grid">
           {/* Authoritative Structured Attributes */}
-          <div className="attr-column authoritative">
+          <div className="attr-col verified-side">
             <div className="attr-col-header">
               <ShieldCheck size={16} className="text-success" />
-              <h3>Channel3 Structured Attributes (Verified Server-Side)</h3>
+              <h3>Server-Side Structured Attributes</h3>
             </div>
             <p className="attr-col-sub">
-              Deterministic key-value handles parsed by Channel3. The gateway strictly validates these.
+              Deterministic key-value handles parsed directly from retailer catalog feeds.
             </p>
 
             <div className="attrs-tags-list">
@@ -90,35 +113,38 @@ export default function ProductCard({
                   const isRam = key.toLowerCase() === 'ram'
                   return (
                     <div key={key} className={`attr-tag ${isRam ? 'highlight' : ''}`}>
-                      <span className="attr-key font-mono">{key}:</span>
+                      <span className="attr-key">{key.toUpperCase()}</span>
                       <span className="attr-val font-mono">{String(val)}</span>
                     </div>
                   )
                 })
               ) : (
                 <div className="attr-tag empty-alert">
-                  <AlertTriangle size={14} className="text-danger" />
-                  <span>No structured attributes populated for this SKU (Triggers Fail-Closed Rule 2)</span>
+                  <AlertTriangle size={15} className="text-danger shrink-0" />
+                  <span>Missing required RAM handle — Gateway will fail-closed at Rule 2.</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Untrusted Free-Text Description (Potential Injection Vector) */}
-          <div className="attr-column untrusted">
+          {/* Merchant Free-Text Description (Untrusted Vector) */}
+          <div className="attr-col untrusted-side">
             <div className="attr-col-header">
               <AlertTriangle size={16} className="text-warning" />
-              <h3>Merchant Free-Text Listing (Untrusted AI Input)</h3>
+              <h3>Merchant Marketing Listing (Untrusted)</h3>
             </div>
             <p className="attr-col-sub">
-              Natural language marketing copy that shopping LLMs read. Vulnerable to prompt injections.
+              Unstructured text that LLMs scrape. Vulnerable to prompt injection and marketing embellishment.
             </p>
 
             <div className="untrusted-text-box">
               <p className="base-desc">{currentProduct?.description}</p>
               {activeInjectionText && (
                 <div className="injected-payload-box">
-                  <span className="injection-flag font-mono">ATTACK PAYLOAD EMBEDDED IN LISTING:</span>
+                  <div className="injection-flag-row">
+                    <ShieldAlert size={14} className="text-danger" />
+                    <span className="injection-flag">Adversarial Injection Found in Listing</span>
+                  </div>
                   <p className="injection-content">"{activeInjectionText}"</p>
                 </div>
               )}

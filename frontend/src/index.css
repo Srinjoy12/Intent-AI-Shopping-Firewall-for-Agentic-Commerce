@@ -1,32 +1,52 @@
 /* Intent — AI Shopping Firewall
-   Design System Tokens & Base Styles adhering strictly to DESIGN.md
+   PayPal Minimalist Modern Design Tokens & Base Styles adhering strictly to DESIGN.md
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 :root {
-  /* Palette */
-  --bg-primary: #0A0A0F;
-  --surface: #13131A;
-  --surface-raised: #1A1A24;
-  --border: #2A2A3A;
-  --text-primary: #E8E8ED;
-  --text-secondary: #8B8B9E;
+  /* Canvas & Surfaces */
+  --bg-primary: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-raised: #F1F5F9;
+  --surface-subtle: #F8FAFC;
+  --border: #E2E8F0;
+  --border-focus: #0070BA;
   
-  --accent-verdict: #3B82F6; /* PayPal Blue */
-  --accent-verdict-glow: rgba(59, 130, 246, 0.15);
+  /* PayPal Brand Palette */
+  --color-paypal-blue: #0070BA;
+  --color-paypal-blue-hover: #005EA6;
+  --color-paypal-blue-subtle: #EBF5FF;
+  --color-paypal-navy: #001C3F;
+  --color-paypal-gold: #FFC439;
+  --color-paypal-gold-hover: #F2B82E;
   
-  --danger: #EF4444;
-  --danger-bg: rgba(239, 68, 68, 0.1);
-  --danger-border: rgba(239, 68, 68, 0.25);
+  /* Typography Colors */
+  --text-primary: #001C3F;       /* High-contrast deep navy */
+  --text-secondary: #5B6B82;     /* Refined slate muted */
+  --text-tertiary: #94A3B8;
   
-  --success: #22C55E;
-  --success-bg: rgba(34, 197, 94, 0.1);
-  --success-border: rgba(34, 197, 94, 0.25);
+  /* Status Semantics */
+  --accent-verdict: #0070BA;
+  --accent-verdict-glow: rgba(0, 112, 186, 0.12);
   
-  --warning: #F59E0B;
-  --warning-bg: rgba(245, 158, 11, 0.1);
+  --danger: #DC2626;
+  --danger-bg: #FEF2F2;
+  --danger-border: #FEE2E2;
+  --danger-text: #991B1B;
   
-  --neutral-tag: #6366F1;
-  --neutral-tag-bg: rgba(99, 102, 241, 0.12);
+  --success: #059669;
+  --success-bg: #ECFDF5;
+  --success-border: #D1FAE5;
+  --success-text: #065F46;
+  
+  --warning: #D97706;
+  --warning-bg: #FFFBEB;
+  --warning-border: #FEF3C7;
+  --warning-text: #92400E;
+  
+  --neutral-tag: #0284C7;
+  --neutral-tag-bg: #F0F9FF;
   
   /* Fonts */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -34,12 +54,15 @@
   
   /* Radii */
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 9999px;
   
-  /* Shadows */
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.6);
+  /* Refined Modern Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 28, 63, 0.04);
+  --shadow-card: 0 1px 3px rgba(0, 28, 63, 0.05), 0 1px 2px rgba(0, 28, 63, 0.03);
+  --shadow-raised: 0 4px 14px rgba(0, 28, 63, 0.07), 0 2px 6px rgba(0, 28, 63, 0.03);
+  --shadow-modal: 0 12px 32px -4px rgba(0, 28, 63, 0.12), 0 4px 12px -2px rgba(0, 28, 63, 0.06);
 }
 
 *, *::before, *::after {
@@ -52,8 +75,8 @@ html, body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
@@ -68,14 +91,30 @@ button {
   cursor: pointer;
   border: none;
   background: none;
+  transition: all 0.15s ease;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-paypal-blue);
+  outline-offset: 2px;
 }
 
 input, textarea, select {
   font-family: inherit;
   color: var(--text-primary);
+  background-color: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Scrollbar */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--color-paypal-blue);
+  box-shadow: 0 0 0 3px rgba(0, 112, 186, 0.12);
+}
+
+/* Subtle, clean modern scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -84,46 +123,31 @@ input, textarea, select {
   background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: #CBD5E1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: #94A3B8;
 }
 
 /* Animations */
 @keyframes pulseDanger {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
-  }
-}
-
-@keyframes pulseSuccess {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
-  }
-}
-
-@keyframes slideDownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
   }
 }
 
 @keyframes spinSlow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {

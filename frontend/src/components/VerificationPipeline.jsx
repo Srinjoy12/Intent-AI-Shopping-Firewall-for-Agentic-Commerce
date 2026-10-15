@@ -1,14 +1,13 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
-  ShieldAlert,
   ShieldCheck,
+  ShieldAlert,
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  RotateCcw,
-  ArrowRight,
+  ChevronDown,
+  ChevronUp,
   Terminal,
-  Server,
   Lock,
 } from 'lucide-react'
 
@@ -18,14 +17,14 @@ export default function VerificationPipeline({
   policy,
   stepStates,
 }) {
+  const [showRawAgent, setShowRawAgent] = useState(false)
   const isBlocked = evaluation?.status === 'BLOCKED'
   const isVerified = evaluation?.status === 'VERIFIED_READY_FOR_PAYPAL' || evaluation?.status === 'CAPTURED'
 
   // Helper to determine status for each of the 4 rules
   const getRuleVerdict = (ruleNumber) => {
-    if (!evaluation) return { status: 'idle', message: 'Awaiting submission' }
-    
-    // Check if evaluation is in progress (staggered animation)
+    if (!evaluation) return { status: 'idle', message: 'Awaiting evaluation' }
+
     const animState = stepStates?.[ruleNumber]
     if (animState === 'checking') {
       return { status: 'checking', message: 'Evaluating server-side constraints...' }
@@ -41,7 +40,7 @@ export default function VerificationPipeline({
       if (v) return { status: 'failed', detail: v.detail }
       return {
         status: 'passed',
-        detail: `Merchant domain verified. Availability: InStock`,
+        detail: 'Merchant domain verified as authentic. Stock status: InStock.',
       }
     }
 
@@ -54,7 +53,7 @@ export default function VerificationPipeline({
       if (v) return { status: 'failed', detail: v.detail }
       return {
         status: 'passed',
-        detail: `All ${Object.keys(policy?.required_structured_attributes || {}).length} required attributes match authoritative catalog.`,
+        detail: `All required attributes (16GB RAM, 512GB Storage) match authoritative catalog.`,
       }
     }
 
@@ -67,7 +66,7 @@ export default function VerificationPipeline({
       if (v) return { status: 'failed', detail: v.detail }
       return {
         status: 'passed',
-        detail: `Qty ${agentRequest?.quantity || 1} <= ${policy?.max_quantity || 1}. Subtotal $${evaluation.computed_subtotal || '0.00'} within $${policy?.max_order_total || '1,200.00'} budget.`,
+        detail: `Quantity (${agentRequest?.quantity || 1}) within limit. Subtotal $${evaluation.computed_subtotal || '0.00'} within $${policy?.max_order_total || '1,200.00'} budget.`,
       }
     }
 
@@ -75,14 +74,14 @@ export default function VerificationPipeline({
       if (violations.length > 0) {
         return {
           status: 'blocked',
-          detail: 'Payment construction aborted. Zero funds routed to PayPal.',
+          detail: 'Payment construction aborted. 0 funds routed to PayPal.',
         }
       }
       return {
         status: 'passed',
         detail: evaluation.paypal_order_id
-          ? `PayPal Sandbox order created: ${evaluation.paypal_order_id}`
-          : 'Verified safe. Ready for PayPal order construction.',
+          ? `PayPal Sandbox order constructed: ${evaluation.paypal_order_id}`
+          : 'Verified compliant. Safe to route to PayPal Sandbox.',
       }
     }
 
@@ -92,155 +91,167 @@ export default function VerificationPipeline({
   const rulesMeta = [
     {
       num: 1,
-      name: 'Rule 1: Offer Domain & Availability',
-      desc: 'Verify retailer domain exists in product offers and stock status matches policy.',
+      name: 'Rule 1: Domain & Stock Verification',
+      desc: 'Validates retailer domain exists in official feeds and item is in stock.',
     },
     {
       num: 2,
-      name: 'Rule 2: Structured Attribute Verification',
-      desc: 'Fail-closed verification: requires exact matches on canonical Channel3 handles (e.g. ram, storage).',
+      name: 'Rule 2: Structured Attribute Match',
+      desc: 'Deterministic check against canonical Channel3 handles (16GB RAM, 512GB SSD).',
     },
     {
       num: 3,
-      name: 'Rule 3: Quantity & Arithmetic Enforcement',
-      desc: 'Ensures quantity is within policy cap and subtotal (unit_price * qty) does not exceed budget limit.',
+      name: 'Rule 3: Quantity & Arithmetic Cap',
+      desc: 'Enforces maximum quantity (1 unit) and total order budget ($1,200.00).',
     },
     {
       num: 4,
-      name: 'Rule 4: PayPal Safe Payload Routing',
-      desc: 'Only constructs payment request if Rules 1–3 pass with zero violations.',
+      name: 'Rule 4: Safe Payment Construction',
+      desc: 'Constructs PayPal Sandbox order only if Rules 1–3 pass with zero violations.',
     },
   ]
 
   return (
     <div className="verification-pipeline-container">
-      {/* Untrusted Agent Output Panel */}
-      <div className="agent-submission-box">
-        <div className="submission-header">
-          <Terminal size={15} />
-          <span className="submission-title">Untrusted AI Shopping Agent Output</span>
-          <span className="isolation-pill font-mono">ISOLATED TRUST BOUNDARY</span>
+      {/* Pipeline Header */}
+      <div className="pipeline-header">
+        <div className="pipeline-title-group">
+          <Lock size={16} className="text-paypal-blue" />
+          <h3 className="pipeline-title">Deterministic Firewall Pipeline</h3>
         </div>
-
-        <div className="submission-body">
-          <div className="reasoning-row">
-            <span className="reasoning-label font-mono">LLM Reasoning:</span>
-            <p className="reasoning-text">
-              {agentRequest?.agent_reasoning || 'No agent run yet. Select a preset or test order to begin.'}
-            </p>
-          </div>
-
-          <div className="payload-row">
-            <span className="payload-label font-mono">Submitted Intent:</span>
-            <code className="payload-json font-mono">
-              {agentRequest
-                ? JSON.stringify(
-                    {
-                      policy_id: agentRequest.policy_id,
-                      product_id: agentRequest.product_id,
-                      merchant_domain: agentRequest.merchant_domain,
-                      quantity: agentRequest.quantity,
-                    },
-                    null,
-                    2
-                  )
-                : '{ ... }'}
-            </code>
-          </div>
-        </div>
+        <span className="pipeline-badge">Pure-Code Engine</span>
       </div>
 
-      {/* Signature Moment: 4 Sequential Rules */}
-      <div className="pipeline-rules-section">
-        <div className="pipeline-header">
-          <Lock size={16} />
-          <h3>Deterministic Verification Pipeline (Pure-Code Gate)</h3>
-        </div>
-
-        <div className="rules-stack">
-          {rulesMeta.map((rule) => {
-            const verdict = getRuleVerdict(rule.num)
-            return (
-              <div
-                key={rule.num}
-                className={`rule-card ${verdict.status}`}
-              >
-                <div className="rule-card-left">
-                  <div className="rule-status-icon">
-                    {verdict.status === 'passed' && (
-                      <CheckCircle2 size={18} className="text-success" />
-                    )}
-                    {verdict.status === 'failed' && (
-                      <XCircle size={18} className="text-danger" />
-                    )}
-                    {verdict.status === 'blocked' && (
-                      <AlertTriangle size={18} className="text-muted" />
-                    )}
-                    {verdict.status === 'checking' && (
-                      <span className="spinner-indicator"></span>
-                    )}
-                    {verdict.status === 'idle' && (
-                      <span className="idle-indicator font-mono">{rule.num}</span>
-                    )}
-                  </div>
-
-                  <div className="rule-info">
-                    <h4 className="rule-name">{rule.name}</h4>
-                    <p className="rule-desc">{rule.desc}</p>
-                    {verdict.detail && (
-                      <div className="rule-detail font-mono">
-                        {verdict.detail}
-                      </div>
-                    )}
-                  </div>
+      {/* 4 Sequential Deterministic Rules */}
+      <div className="rules-stack">
+        {rulesMeta.map((rule) => {
+          const verdict = getRuleVerdict(rule.num)
+          return (
+            <div
+              key={rule.num}
+              className={`rule-card ${verdict.status}`}
+            >
+              <div className="rule-card-left">
+                <div className={`rule-status-circle ${verdict.status}`}>
+                  {verdict.status === 'passed' && (
+                    <CheckCircle2 size={16} className="text-success" />
+                  )}
+                  {verdict.status === 'failed' && (
+                    <XCircle size={16} className="text-danger" />
+                  )}
+                  {verdict.status === 'blocked' && (
+                    <AlertTriangle size={16} className="text-muted" />
+                  )}
+                  {verdict.status === 'checking' && (
+                    <span className="spinner-indicator"></span>
+                  )}
+                  {verdict.status === 'idle' && (
+                    <span className="idle-step-num">{rule.num}</span>
+                  )}
                 </div>
 
-                <div className="rule-card-right">
-                  <span className={`verdict-chip font-mono ${verdict.status}`}>
-                    {verdict.status.toUpperCase()}
-                  </span>
+                <div className="rule-info">
+                  <div className="rule-header-line">
+                    <h4 className="rule-name">{rule.name}</h4>
+                    <span className={`verdict-pill ${verdict.status}`}>
+                      {verdict.status === 'checking' ? 'Evaluating' : verdict.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="rule-desc">{rule.desc}</p>
+                  {verdict.detail && (
+                    <div className={`rule-detail-message ${verdict.status}`}>
+                      {verdict.detail}
+                    </div>
+                  )}
                 </div>
               </div>
-            )
-          })}
-        </div>
+            </div>
+          )
+        })}
       </div>
 
       {/* Gateway Verdict Banner */}
       {evaluation && (
-        <div className={`verdict-banner ${isBlocked ? 'blocked' : 'verified'}`}>
-          <div className="verdict-banner-left">
+        <div className={`verdict-card ${isBlocked ? 'blocked' : 'verified'}`}>
+          <div className="verdict-card-header">
             {isBlocked ? (
-              <ShieldAlert size={28} className="banner-icon danger" />
+              <ShieldAlert size={22} className="text-danger" />
             ) : (
-              <ShieldCheck size={28} className="banner-icon success" />
+              <ShieldCheck size={22} className="text-success" />
             )}
             <div>
-              <div className="verdict-status-title">
-                <span>GATEWAY VERDICT:</span>
-                <span className="status-name font-mono">{evaluation.status}</span>
+              <div className="verdict-title-row">
+                <span className="verdict-label">Gateway Decision:</span>
+                <span className={`verdict-status-tag ${isBlocked ? 'blocked' : 'verified'}`}>
+                  {evaluation.status === 'VERIFIED_READY_FOR_PAYPAL'
+                    ? 'VERIFIED · READY FOR PAYPAL'
+                    : evaluation.status === 'BLOCKED'
+                    ? 'BLOCKED · RISK INTERCEPTED'
+                    : evaluation.status}
+                </span>
               </div>
-              <p className="verdict-sub">
-                Attempt ID: <span className="font-mono">{evaluation.attempt_id}</span>
-                {evaluation.computed_subtotal && (
-                  <> · Subtotal: <span className="font-mono">${evaluation.computed_subtotal}</span></>
-                )}
+              <p className="verdict-summary">
+                {isBlocked
+                  ? 'Payment intercepted before funds moved. Zero financial risk.'
+                  : `Order cleared all 4 deterministic rules. Ready for settlement.`}
               </p>
             </div>
           </div>
 
           {evaluation.remediation && (
-            <div className="remediation-pill">
-              <span className="remediation-action font-mono">
-                ACTION: {evaluation.remediation.action}
-              </span>
-              <p className="remediation-instruction font-mono">
+            <div className="remediation-box">
+              <span className="remediation-tag">Self-Healing Guidance:</span>
+              <p className="remediation-text">
                 {evaluation.remediation.instruction}
               </p>
             </div>
           )}
         </div>
       )}
+
+      {/* Collapsible Agent Intent Drawer (Clean, non-intrusive) */}
+      <div className="agent-intent-accordion">
+        <button
+          type="button"
+          className="intent-toggle-btn"
+          onClick={() => setShowRawAgent(!showRawAgent)}
+        >
+          <div className="flex items-center gap-2">
+            <Terminal size={13} className="text-secondary" />
+            <span>Untrusted AI Agent Intent &amp; Reasoning</span>
+          </div>
+          {showRawAgent ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+
+        {showRawAgent && (
+          <div className="intent-drawer-content">
+            <div className="intent-block">
+              <span className="intent-block-label">Agent Reasoning:</span>
+              <p className="intent-reasoning-text">
+                {agentRequest?.agent_reasoning || 'No agent activity recorded yet.'}
+              </p>
+            </div>
+
+            <div className="intent-block">
+              <span className="intent-block-label">Submitted Payload:</span>
+              <pre className="intent-json-code">
+                {agentRequest
+                  ? JSON.stringify(
+                      {
+                        policy_id: agentRequest.policy_id,
+                        product_id: agentRequest.product_id,
+                        merchant_domain: agentRequest.merchant_domain,
+                        quantity: agentRequest.quantity,
+                      },
+                      null,
+                      2
+                    )
+                  : '// Awaiting agent submission'}
+              </pre>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
