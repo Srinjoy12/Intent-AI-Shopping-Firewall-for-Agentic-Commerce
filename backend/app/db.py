@@ -153,6 +153,19 @@ async def get_attempts(limit: int = 100) -> list[dict[str, Any]]:
             return results
 
 
+async def update_paypal_refund(
+    capture_id: str,
+    status: str = "REFUNDED",
+) -> None:
+    """Update an attempt when PayPal capture is refunded."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE attempts SET status = ? WHERE paypal_capture_id = ?",
+            (status, capture_id),
+        )
+        await db.commit()
+
+
 async def get_analytics_summary() -> dict[str, Any]:
     """Calculate aggregated metrics for AG Studio dashboard."""
     async with aiosqlite.connect(DB_PATH) as db:
@@ -164,6 +177,29 @@ async def get_analytics_summary() -> dict[str, Any]:
 
         # Total attempts
         total_attempts = sum(status_counts.values())
+
+        # Total dollars prevented (Blocked attempts) and safely captured
+        dollars_prevented = 0.0
+        dollars_captured = 0.0
+        async with db.execute("SELECT status, computed_subtotal, unit_price, quantity FROM attempts") as cursor:
+            rows = await cursor.fetchall()
+            for r in rows:
+                subtotal_val = 0.0
+                if r["computed_subtotal"]:
+                    try:
+                        subtotal_val = float(r["computed_subtotal"])
+                    except (ValueError, TypeError):
+                        subtotal_val = 0.0
+                elif r["unit_price"] and r["quantity"]:
+                    try:
+                        subtotal_val = float(r["unit_price"]) * float(r["quantity"])
+                    except (ValueError, TypeError):
+                        subtotal_val = 0.0
+
+                if r["status"] == "BLOCKED":
+                    dollars_prevented += subtotal_val
+                elif r["status"] in ("CAPTURED", "REFUNDED"):
+                    dollars_captured += subtotal_val
 
         # All violations to calculate rule breakdown
         async with db.execute("SELECT violations_json FROM attempts WHERE violations_json IS NOT NULL") as cursor:
@@ -187,5 +223,8 @@ async def get_analytics_summary() -> dict[str, Any]:
             "verified_count": status_counts.get("VERIFIED_READY_FOR_PAYPAL", 0),
             "captured_count": status_counts.get("CAPTURED", 0),
             "refunded_count": status_counts.get("REFUNDED", 0),
+            "dollars_prevented": round(dollars_prevented, 2),
+            "dollars_captured": round(dollars_captured, 2),
             "violation_breakdown": rule_breakdown,
         }
+

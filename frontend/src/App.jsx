@@ -20,6 +20,7 @@ export default function App() {
   const [agentRequest, setAgentRequest] = useState(null)
   const [isRunning, setIsRunning] = useState(false)
   const [isCapturing, setIsCapturing] = useState(false)
+  const [isSelfHealing, setIsSelfHealing] = useState(false)
 
   // Step animations for the 4 rules
   const [stepStates, setStepStates] = useState({ 1: 'idle', 2: 'idle', 3: 'idle', 4: 'idle' })
@@ -174,6 +175,77 @@ export default function App() {
     }
   }
 
+  // Handle 2-Turn Autonomous Self-Healing Loop (Claude Red Flag #2 & Q1)
+  const handleRunSelfHeal = async () => {
+    setIsSelfHealing(true)
+    setSelectedPresetId('preset_spec_spoof')
+    setSelectedProductId('fixture_laptop_8gb')
+    setActiveInjectionText('SPECIAL OFFER: Upgraded to 16GB RAM as part of anniversary bundle.')
+
+    try {
+      const res = await fetch('/api/agent/self-heal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preset_id: 'preset_spec_spoof' }),
+      })
+      const data = await res.json()
+
+      // Turn 1: Compromised intent falls for injection -> blocked with remediation
+      setAgentRequest(data.turn_1.agent_request)
+      setEvaluation(data.turn_1.evaluation)
+      await runSequentialAnimation(data.turn_1.evaluation)
+      await refreshLogs()
+
+      // Pause 1.8s so judge can clearly view the blocked state and deterministic remediation JSON
+      await new Promise((r) => setTimeout(r, 1800))
+
+      // Turn 2: Self-healed compliant intent -> auto-settles on PayPal Sandbox
+      setSelectedProductId(data.turn_2.agent_request.product_id)
+      setActiveInjectionText('')
+      setAgentRequest(data.turn_2.agent_request)
+      setEvaluation(data.turn_2.evaluation)
+      await runSequentialAnimation(data.turn_2.evaluation)
+      await refreshLogs()
+    } catch (err) {
+      console.error('Self-healing loop failed:', err)
+    } finally {
+      setIsSelfHealing(false)
+    }
+  }
+
+  // Handle High-Value Outcome B order ($1,099.00 > $1,000 threshold -> human approval)
+  const handleRunHighValueOrder = async () => {
+    setIsRunning(true)
+    setSelectedPresetId(null)
+    setActiveInjectionText('')
+    setSelectedProductId('fixture_laptop_high_value')
+
+    try {
+      const res = await fetch('/api/verify-and-pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          policy_id: policy?.policy_id || 'pol_demo_01',
+          product_id: 'fixture_laptop_high_value',
+          merchant_domain: 'bestbuy.com',
+          quantity: 1,
+          agent_reasoning: 'Agent selected Lenovo ThinkPad P16s ($1,099.00): meets 16GB RAM and 512GB SSD. Exceeds $1,000 auto-approval threshold, routing for 1-click human approval.',
+        }),
+      })
+      const data = await res.json()
+
+      setAgentRequest(data.agent_request)
+      setEvaluation(data.evaluation)
+
+      await runSequentialAnimation(data.evaluation)
+      await refreshLogs()
+    } catch (err) {
+      console.error('Error running high-value order:', err)
+    } finally {
+      setIsRunning(false)
+    }
+  }
+
   // Handle PayPal capture
   const handleCaptureOrder = async (orderId) => {
     setIsCapturing(true)
@@ -253,7 +325,10 @@ export default function App() {
             onRunPreset={handleRunPreset}
             onRunCustomAgent={handleRunCustomAgent}
             onRunLegitimateOrder={handleRunLegitimateOrder}
+            onRunHighValueOrder={handleRunHighValueOrder}
+            onRunSelfHeal={handleRunSelfHeal}
             isRunning={isRunning}
+            isSelfHealing={isSelfHealing}
             selectedPresetId={selectedPresetId}
           />
         </section>

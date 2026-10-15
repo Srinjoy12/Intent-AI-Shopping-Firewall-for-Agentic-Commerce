@@ -482,7 +482,7 @@
 
 .presets-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -689,6 +689,32 @@
 .btn-legitimate-run:hover:not(:disabled) {
   background-color: var(--success);
   color: #fff;
+}
+
+.btn-highvalue-run {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(14, 165, 233, 0.12);
+  border: 1px solid var(--accent-verdict);
+  color: #38bdf8;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  min-height: 44px;
+}
+
+.btn-highvalue-run:hover:not(:disabled) {
+  background-color: var(--accent-verdict);
+  color: #fff;
+}
+
+.btn-highvalue-run:disabled,
+.btn-legitimate-run:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ── Verification Pipeline Component ───────────────────────────────────── */
@@ -1250,7 +1276,7 @@
 /* KPI Cards */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -1268,6 +1294,8 @@
 .kpi-card.danger { border-top: 3px solid var(--danger); }
 .kpi-card.accent { border-top: 3px solid var(--accent-verdict); }
 .kpi-card.success { border-top: 3px solid var(--success); }
+.kpi-card.warning { border-top: 3px solid #f59e0b; }
+.kpi-card.purple { border-top: 3px solid #8b5cf6; }
 
 .kpi-label {
   font-size: 11px;
@@ -1574,6 +1602,135 @@
 
 .spin-icon {
   animation: spinSlow 0.8s linear infinite;
+}
+
+/* Master-Detail Audit Drawer */
+.audit-detail-drawer {
+  background-color: var(--surface);
+  border: 1px solid var(--accent-verdict);
+  border-radius: var(--radius-sm);
+  margin-top: 16px;
+  padding: 16px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.audit-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+
+.audit-detail-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.btn-close-detail {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-close-detail:hover {
+  background-color: var(--surface-raised);
+  color: var(--text-primary);
+}
+
+.audit-detail-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.audit-col-card {
+  background-color: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.audit-col-card.red-border {
+  border-top: 3px solid var(--danger);
+}
+
+.audit-col-card.blue-border {
+  border-top: 3px solid var(--accent-verdict);
+}
+
+.audit-col-card.green-border {
+  border-top: 3px solid var(--success);
+}
+
+.audit-col-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.audit-kv-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.audit-k {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.audit-v {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  word-break: break-word;
+}
+
+.audit-reasoning-box {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* Custom AG Grid Dark Theme overrides */
+.ag-theme-quartz-dark {
+  --ag-background-color: #0c121e;
+  --ag-header-background-color: #0f172a;
+  --ag-header-foreground-color: #94a3b8;
+  --ag-border-color: #1e293b;
+  --ag-row-hover-color: rgba(30, 41, 59, 0.5);
+  --ag-selected-row-background-color: rgba(30, 58, 138, 0.2);
+  --ag-font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --ag-font-size: 12px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
 /* ── Responsive Media Queries ─────────────────────────────────────────── */

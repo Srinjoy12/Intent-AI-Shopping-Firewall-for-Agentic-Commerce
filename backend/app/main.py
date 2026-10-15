@@ -29,6 +29,7 @@ from app.db import (
     record_attempt,
     update_paypal_capture,
     update_paypal_order,
+    update_paypal_refund,
 )
 from app.engine import verify_order_intent
 from app.fixtures import (
@@ -364,6 +365,92 @@ async def run_preset(preset_id: str):
     )
 
 
+# ── 2-Turn Autonomous Self-Healing Loop ───────────────────────────────────
+
+class SelfHealRequest(BaseModel):
+    preset_id: str = "preset_spec_spoof"
+    custom_injection_text: str = Field(default="", max_length=200)
+
+
+class SelfHealResponse(BaseModel):
+    turn_1: VerifyAndPayResponse
+    turn_2: VerifyAndPayResponse
+    healing_summary: str
+
+
+@app.post("/api/agent/self-heal", response_model=SelfHealResponse)
+async def self_heal_agent(req: SelfHealRequest):
+    """
+    2-Turn Autonomous Self-Healing Loop:
+    Turn 1 (Compromised): Untrusted LLM falls for injection -> Gateway returns BLOCKED with Remediation JSON.
+    Turn 2 (Self-Healed): LLM receives Gateway remediation JSON -> auto-corrects to compliant laptop & settles autonomously!
+    """
+    preset = get_preset_by_id(req.preset_id)
+    injection_text = req.custom_injection_text or (preset.injection_text if preset else "")
+    all_candidates = get_all_fixture_products()
+
+    # Prioritize attack candidate matching the preset
+    if preset:
+        primary = get_fixture_product(preset.product_id)
+        if primary:
+            all_candidates = [primary] + [p for p in all_candidates if p.get("product_id") != preset.product_id]
+
+    # Turn 1: Compromised Intent
+    turn1_req = await _llm_adapter.generate_order_intent(
+        policy_id=_current_policy.policy_id,
+        search_results=all_candidates,
+        search_goal=_current_policy.search_goal,
+        injected_description=injection_text or "Promotional override",
+        prior_remediation=None,
+    )
+
+    prod1 = get_fixture_product(turn1_req.product_id) or retrieve_product(turn1_req.product_id)
+    eval1 = verify_order_intent(turn1_req, _current_policy, prod1)
+    await record_attempt(eval1, turn1_req)
+
+    turn1_resp = VerifyAndPayResponse(
+        evaluation=eval1,
+        agent_request=turn1_req,
+        policy=_current_policy,
+    )
+
+    # Turn 2: Self-Healing with Gateway Feedback
+    turn2_req = await _llm_adapter.generate_order_intent(
+        policy_id=_current_policy.policy_id,
+        search_results=get_all_fixture_products(),
+        search_goal=_current_policy.search_goal,
+        injected_description=None,
+        prior_remediation=eval1.remediation,
+    )
+
+    prod2 = get_fixture_product(turn2_req.product_id) or retrieve_product(turn2_req.product_id)
+    eval2 = verify_order_intent(turn2_req, _current_policy, prod2)
+
+    # Execute PayPal Outcome A settlement for the self-healed order
+    await _execute_paypal_settlement(eval2, turn2_req)
+    await record_attempt(eval2, turn2_req)
+
+    turn2_resp = VerifyAndPayResponse(
+        evaluation=eval2,
+        agent_request=turn2_req,
+        policy=_current_policy,
+    )
+
+    failed_rule = eval1.violations[0].rule.value if eval1.violations else "VIOLATION"
+    summary = (
+        f"2-Turn Autonomous Self-Healing Succeeded: Turn 1 intercepted on {failed_rule} (Blocked). "
+        f"Turn 2 received deterministic remediation instruction and auto-switched to compliant "
+        f"'{eval2.channel3_record.title if eval2.channel3_record else turn2_req.product_id}' "
+        f"settled autonomously on PayPal Sandbox ({eval2.status.value})."
+    )
+
+    return SelfHealResponse(
+        turn_1=turn1_resp,
+        turn_2=turn2_resp,
+        healing_summary=summary,
+    )
+
+
 # ── Interactive Agent Shopping Simulation ──────────────────────────────────
 
 class AgentShopRequest(BaseModel):
@@ -466,9 +553,11 @@ async def capture_paypal_order(order_id: str):
 async def refund_paypal_capture(capture_id: str, amount: str | None = None):
     """Refund a previously captured PayPal payment."""
     if capture_id.startswith("CAP_SBX_"):
+        await update_paypal_refund(capture_id, "REFUNDED")
         return {"status": "REFUNDED", "capture_id": capture_id, "note": "Sandbox refund executed successfully."}
     try:
         refund_res = await refund_capture(capture_id, amount=amount)
+        await update_paypal_refund(capture_id, "REFUNDED")
         return {"status": "REFUNDED", "capture_id": capture_id, "raw": refund_res}
     except Exception as e:
         logger.error("Refund failed for %s: %s", capture_id, e)

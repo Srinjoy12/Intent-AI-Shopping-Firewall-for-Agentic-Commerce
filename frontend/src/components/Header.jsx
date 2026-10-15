@@ -84,6 +84,15 @@ export default function Header({ policy, rateLimitStatus, health }) {
           <div className="policy-divider">/</div>
 
           <div className="policy-item">
+            <span className="policy-label">AUTO-APPROVE:</span>
+            <span className="policy-val font-mono font-semibold text-emerald-400">
+              &le; ${policy?.auto_approve_under || '1,000.00'} USD
+            </span>
+          </div>
+
+          <div className="policy-divider">/</div>
+
+          <div className="policy-item">
             <span className="policy-label">REQUIRED AVAILABILITY:</span>
             <span className="policy-val font-mono">{policy?.required_availability || 'InStock'}</span>
           </div>
