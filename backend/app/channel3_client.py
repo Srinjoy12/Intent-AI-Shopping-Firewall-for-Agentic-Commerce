@@ -1,15 +1,19 @@
-"""Intent Gateway — Channel3 SDK wrapper with server-side caching."""
+"""Intent Gateway — Channel3 v1 REST API wrapper with server-side caching."""
 
 from __future__ import annotations
 
 import time
 import logging
 from typing import Any
+from urllib.parse import urlparse
+import httpx
 
 from app.config import get_settings
 from app.models import Channel3Offer, Channel3Record
 
 logger = logging.getLogger(__name__)
+
+CHANNEL3_BASE_URL = "https://api.trychannel3.com/v1"
 
 # ── In-Memory Cache ────────────────────────────────────────────────────────
 
@@ -32,12 +36,11 @@ def _set_cached(product_id: str, data: Any) -> None:
     _product_cache[product_id] = (time.time(), data)
 
 
-# ── Channel3 Client ───────────────────────────────────────────────────────
+# ── Helpers ───────────────────────────────────────────────────────────────
 
 
 def _extract_domain(url_or_name: str) -> str:
     """Extract clean domain from URL or merchant name."""
-    from urllib.parse import urlparse
     if not url_or_name:
         return ""
     if "://" in url_or_name:
@@ -52,136 +55,148 @@ def _extract_domain(url_or_name: str) -> str:
     return clean
 
 
-def _get_client():
-    """Lazy-init the Channel3 sync client."""
-    settings = get_settings()
-    if not settings.channel3_api_key:
-        return None
-    try:
-        from channel3_sdk import Channel3Client
-        return Channel3Client(api_key=settings.channel3_api_key)
-    except ImportError:
-        logger.warning("channel3_sdk not installed — using fixtures only")
-        return None
-    except Exception as e:
-        logger.error("Failed to init Channel3 client: %s", e)
-        return None
+def _parse_product_dict(raw: dict) -> dict:
+    """Normalize a raw Channel3 v1 product response dictionary."""
+    product_id = raw.get("id") or raw.get("product_id") or ""
+    title = raw.get("title") or ""
+    description = raw.get("description") or ""
+
+    # Parse images
+    images = raw.get("images", []) or []
+    image_url = ""
+    if images and isinstance(images, list):
+        image_url = images[0].get("cleaned_url") or images[0].get("url") or ""
+    elif raw.get("image_url"):
+        image_url = raw.get("image_url")
+
+    # Parse structured attributes
+    raw_attrs = raw.get("structured_attributes", {}) or {}
+    attrs: dict[str, str] = {}
+    for k, v in raw_attrs.items():
+        if isinstance(v, list):
+            if len(v) == 1:
+                attrs[k] = str(v[0])
+            else:
+                attrs[k] = ", ".join(str(x) for x in v)
+        elif v is not None:
+            attrs[k] = str(v)
+
+    # Normalize standard alias handles
+    if "storage-capacity" in attrs and "storage" not in attrs:
+        attrs["storage"] = attrs["storage-capacity"]
+    if "brand" not in attrs:
+        brands = raw.get("brands", []) or []
+        if brands and isinstance(brands, list):
+            attrs["brand"] = brands[0].get("name", "")
+        elif hasattr(raw, "brand_name"):
+            attrs["brand"] = getattr(raw, "brand_name")
+
+    # Parse offers
+    raw_offers = raw.get("offers", []) or []
+    offers = []
+    for off in raw_offers:
+        domain = off.get("domain") or _extract_domain(off.get("merchant_name", "") or off.get("url", ""))
+        p_info = off.get("price") or {}
+        if isinstance(p_info, dict):
+            price_val = str(p_info.get("price", "0.00"))
+            currency_val = str(p_info.get("currency", "USD"))
+        else:
+            price_val = str(p_info)
+            currency_val = "USD"
+
+        offers.append({
+            "domain": domain,
+            "url": off.get("url", ""),
+            "price": price_val,
+            "currency": currency_val,
+            "availability": str(off.get("availability", "InStock")),
+            "condition": str(off.get("condition", "New")),
+        })
+
+    return {
+        "product_id": product_id,
+        "title": title,
+        "description": description,
+        "image_url": image_url,
+        "structured_attributes": attrs,
+        "offers": offers,
+    }
+
+
+# ── Channel3 Client Operations ─────────────────────────────────────────────
 
 
 def search_products(query: str, limit: int = 5) -> list[dict]:
     """
     Search Channel3 for products matching a natural language query.
-    Returns a list of simplified product dicts.
+    Uses official Channel3 v1 REST API.
     """
-    client = _get_client()
-    if client is None:
-        logger.warning("Channel3 client unavailable — returning empty search")
+    settings = get_settings()
+    if not settings.channel3_api_key:
+        logger.warning("Channel3 API key not set — returning empty search")
         return []
 
     try:
-        response_products = client.search(query=query, limit=limit)
-        results = []
-        for product in response_products:
-            offers = []
-            raw_offers = getattr(product, "offers", []) or []
-            for offer in raw_offers:
-                domain = _extract_domain(getattr(offer, "merchant_name", "") or getattr(offer, "url", ""))
-                price_val = "0.00"
-                currency_val = "USD"
-                p_obj = getattr(offer, "price", None)
-                if p_obj:
-                    price_val = str(getattr(p_obj, "price", p_obj))
-                    currency_val = getattr(p_obj, "currency", "USD")
-
-                offers.append({
-                    "domain": domain,
-                    "url": getattr(offer, "url", ""),
-                    "price": price_val,
-                    "currency": currency_val,
-                    "availability": str(getattr(offer, "availability", "")),
-                    "condition": "New",
-                })
-
-            results.append({
-                "product_id": getattr(product, "id", ""),
-                "title": getattr(product, "title", ""),
-                "description": getattr(product, "description", "") or "",
-                "image_url": getattr(product, "image_url", "") or "",
-                "structured_attributes": {
-                    "brand": getattr(product, "brand_name", ""),
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.post(
+                f"{CHANNEL3_BASE_URL}/search",
+                headers={
+                    "x-api-key": settings.channel3_api_key,
+                    "Content-Type": "application/json",
                 },
-                "offers": offers,
-            })
-            if results[-1]["product_id"]:
-                _set_cached(results[-1]["product_id"], results[-1])
+                json={"query": query, "limit": limit},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+        raw_products = data.get("products", [])
+        results = []
+        for raw in raw_products:
+            norm = _parse_product_dict(raw)
+            if norm["product_id"]:
+                _set_cached(norm["product_id"], norm)
+                results.append(norm)
+
         return results
 
     except Exception as e:
-        logger.error("Channel3 search failed: %s", e)
+        logger.error("Channel3 v1 search failed: %s", e)
         return []
 
 
 def retrieve_product(product_id: str) -> dict | None:
     """
     Retrieve a single product by ID from Channel3.
-    Uses cache first, then live API call.
-    This is the server-to-server call the Gateway uses for verification.
+    Uses cache first, then live GET /v1/products/{product_id} API call.
+    This is the server-to-server call the Gateway uses for deterministic verification.
     """
     cached = _get_cached(product_id)
     if cached is not None:
         return cached
 
-    client = _get_client()
-    if client is None:
-        logger.warning("Channel3 client unavailable for retrieve(%s)", product_id)
+    settings = get_settings()
+    if not settings.channel3_api_key:
+        logger.warning("Channel3 API key not set for retrieve(%s)", product_id)
         return None
 
     try:
-        product = client.get_product(product_id)
-        offers = []
-        raw_offerings = getattr(product, "merchant_offerings", []) or []
-        for off in raw_offerings:
-            domain = _extract_domain(getattr(off, "merchant_name", "") or getattr(off, "url", ""))
-            price_val = "0.00"
-            currency_val = "USD"
-            p_obj = getattr(off, "price", None)
-            if p_obj:
-                price_val = str(getattr(p_obj, "price", p_obj))
-                currency_val = getattr(p_obj, "currency", "USD")
+        with httpx.Client(timeout=30.0) as client:
+            resp = client.get(
+                f"{CHANNEL3_BASE_URL}/products/{product_id}",
+                headers={"x-api-key": settings.channel3_api_key},
+            )
+            if resp.status_code == 404:
+                return None
+            resp.raise_for_status()
+            raw = resp.json()
 
-            offers.append({
-                "domain": domain,
-                "url": getattr(off, "url", ""),
-                "price": price_val,
-                "currency": currency_val,
-                "availability": str(getattr(off, "availability", "")),
-                "condition": "New",
-            })
-
-        attrs = {}
-        if hasattr(product, "brand_name") and product.brand_name:
-            attrs["brand"] = product.brand_name
-        if hasattr(product, "materials") and product.materials:
-            attrs["materials"] = ", ".join(product.materials)
-        if hasattr(product, "key_features") and product.key_features:
-            attrs["features"] = "; ".join(product.key_features)
-
-        imgs = getattr(product, "image_urls", []) or []
-        img_url = imgs[0] if imgs else ""
-
-        result = {
-            "product_id": product_id,
-            "title": getattr(product, "title", ""),
-            "description": getattr(product, "description", "") or "",
-            "image_url": img_url,
-            "structured_attributes": attrs,
-            "offers": offers,
-        }
-        _set_cached(product_id, result)
-        return result
+        norm = _parse_product_dict(raw)
+        if norm["product_id"]:
+            _set_cached(norm["product_id"], norm)
+        return norm
 
     except Exception as e:
-        logger.error("Channel3 retrieve(%s) failed: %s", product_id, e)
+        logger.error("Channel3 v1 retrieve(%s) failed: %s", product_id, e)
         return None
 
 

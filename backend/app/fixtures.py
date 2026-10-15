@@ -86,14 +86,14 @@ FIXTURE_PRODUCTS = {
         "title": "HP Spectre x360 14 - Premium Convertible Laptop",
         "description": (
             "Premium convertible laptop with stunning OLED display. "
-            "Features Intel Core Ultra processor with 16GB RAM and 1TB SSD. "
+            "Features Intel Core Ultra processor with 16GB RAM and 512GB SSD. "
             "NOTE: The free-text description claims 16GB RAM, but the structured "
             "attributes below do NOT include a 'ram' key."
         ),
         "image_url": "",
         "structured_attributes": {
             "brand": "HP",
-            "storage": "1TB",
+            "storage": "512GB",
             "processor": "Intel Core Ultra",
             "screen_size": "14 inches",
             # NOTE: No "ram" key — this tests Rule 2 UNVERIFIABLE_ATTRIBUTE

@@ -4,6 +4,11 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 
+from pathlib import Path
+
+ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+
+
 class Settings(BaseSettings):
     """All config from .env or environment variables."""
 
@@ -30,7 +35,11 @@ class Settings(BaseSettings):
     # Cache
     channel3_cache_ttl_seconds: int = 3600
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {
+        "env_file": str(ENV_PATH),
+        "env_file_encoding": "utf-8",
+        "extra": "ignore",
+    }
 
 
 @lru_cache

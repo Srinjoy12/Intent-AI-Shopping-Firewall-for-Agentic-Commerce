@@ -142,16 +142,23 @@ def verify_order_intent(
                     ),
                 )
             )
-        elif str(actual_value).lower().strip() != str(required_value).lower().strip():
-            violations.append(
-                Violation(
-                    rule=ViolationRule.STRUCTURED_ATTRIBUTE_MISMATCH,
-                    detail=(
-                        f"Channel3 structured_attributes['{attr_key}'] is '{actual_value}'; "
-                        f"policy requires '{required_value}'."
-                    ),
+        else:
+            # Normalize whitespace and casing for robust comparison (e.g. '16 GB' == '16GB')
+            norm_actual = str(actual_value).lower().replace(" ", "")
+            norm_required = str(required_value).lower().replace(" ", "")
+
+            # Check exact compact match or membership in multi-valued attribute
+            multi_vals = [v.strip().replace(" ", "") for v in str(actual_value).lower().split(",")]
+            if norm_actual != norm_required and norm_required not in multi_vals:
+                violations.append(
+                    Violation(
+                        rule=ViolationRule.STRUCTURED_ATTRIBUTE_MISMATCH,
+                        detail=(
+                            f"Channel3 structured_attributes['{attr_key}'] is '{actual_value}'; "
+                            f"policy requires '{required_value}'."
+                        ),
+                    )
                 )
-            )
 
     # ── Rule 3: Quantity & Offer Price Math ────────────────────────────────
 

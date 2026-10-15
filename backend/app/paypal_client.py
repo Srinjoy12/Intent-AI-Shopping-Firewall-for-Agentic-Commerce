@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import logging
+from decimal import Decimal
 from typing import Any
 
 import httpx
@@ -78,7 +79,7 @@ async def create_order(
     token = await _get_access_token()
 
     # Compute item total
-    item_total = f"{float(unit_amount) * quantity:.2f}"
+    item_total = f"{Decimal(unit_amount) * quantity:.2f}"
 
     order_payload = {
         "intent": intent,
@@ -158,7 +159,7 @@ async def create_order_with_card(
     settings = get_settings()
     token = await _get_access_token()
 
-    item_total = f"{float(unit_amount) * quantity:.2f}"
+    item_total = f"{Decimal(unit_amount) * quantity:.2f}"
 
     order_payload = {
         "intent": "CAPTURE",
