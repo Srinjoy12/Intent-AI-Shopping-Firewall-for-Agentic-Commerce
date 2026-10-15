@@ -7,7 +7,9 @@ Interception layer that isolates untrusted LLMs from payment construction.
 
 # no future annotations
 
+import os
 import logging
+from decimal import Decimal
 from contextlib import asynccontextmanager
 from typing import Any
 
@@ -47,7 +49,13 @@ from app.models import (
     SpendingPolicy,
     VerifyAndPayResponse,
 )
-from app.paypal_client import capture_order, check_paypal_health, create_order, refund_capture
+from app.paypal_client import (
+    capture_order,
+    check_paypal_health,
+    create_order,
+    create_order_with_card,
+    refund_capture,
+)
 from app.rate_limiter import daily_counter
 
 logging.basicConfig(
@@ -196,6 +204,78 @@ async def get_product_details(product_id: str):
     raise HTTPException(status_code=404, detail=f"Product '{product_id}' not found.")
 
 
+async def _execute_paypal_settlement(
+    evaluation: GatewayEvaluationResponse,
+    intent_req: OrderIntentRequest,
+) -> None:
+    """
+    Execute PayPal Sandbox settlement for verified orders.
+    - If computed_subtotal <= auto_approve_under: Outcome A (autonomous card capture in one call).
+    - If computed_subtotal > auto_approve_under: Standard order creation, requiring 1-click human approval.
+    """
+    settings = get_settings()
+    if not (
+        evaluation.status == OrderStatus.VERIFIED_READY_FOR_PAYPAL
+        and settings.paypal_client_id
+        and settings.paypal_client_secret
+        and evaluation.channel3_record
+    ):
+        return
+
+    try:
+        subtotal = Decimal(evaluation.computed_subtotal or "0")
+        auto_limit = Decimal(_current_policy.auto_approve_under)
+
+        # Check if eligible for autonomous capture (Outcome A)
+        if subtotal <= auto_limit:
+            paypal_res = await create_order_with_card(
+                reference_id=evaluation.attempt_id,
+                custom_id=f"intent_{evaluation.policy_id}",
+                description=f"Intent Autonomous Settle: {evaluation.channel3_record.title[:90]}",
+                item_name=evaluation.channel3_record.title,
+                sku=evaluation.channel3_record.product_id,
+                unit_amount=evaluation.channel3_record.unit_price,
+                currency=evaluation.channel3_record.currency,
+                quantity=intent_req.quantity,
+                card_number=os.environ.get("PAYPAL_TEST_CARD_NUMBER", "4111111111111111"),
+                card_expiry=os.environ.get("PAYPAL_TEST_CARD_EXPIRY", "2028-12"),
+            )
+            evaluation.paypal_order_id = paypal_res.get("id")
+            pu = paypal_res.get("purchase_units", [])
+            cap_id = None
+            if pu:
+                captures = pu[0].get("payments", {}).get("captures", [])
+                if captures:
+                    cap_id = captures[0].get("id")
+
+            if paypal_res.get("status") == "COMPLETED" and cap_id:
+                evaluation.status = OrderStatus.CAPTURED
+                evaluation.paypal_capture_id = cap_id
+                evaluation.pricing_note = (
+                    f"Outcome A Autonomous Settlement: Captured in one call via PayPal Advanced Card Processing "
+                    f"(${subtotal:.2f} <= ${_current_policy.auto_approve_under} threshold)."
+                )
+                logger.info("Order %s autonomously settled via Outcome A! Capture: %s", evaluation.paypal_order_id, cap_id)
+                return
+
+        # High-value order: Standard Order creation for 1-click approval
+        paypal_res = await create_order(
+            reference_id=evaluation.attempt_id,
+            custom_id=f"intent_{evaluation.policy_id}",
+            description=f"Intent Verified: {evaluation.channel3_record.title[:100]}",
+            item_name=evaluation.channel3_record.title,
+            sku=evaluation.channel3_record.product_id,
+            unit_amount=evaluation.channel3_record.unit_price,
+            currency=evaluation.channel3_record.currency,
+            quantity=intent_req.quantity,
+        )
+        evaluation.paypal_order_id = paypal_res.get("id")
+        evaluation.pricing_note = f"Order exceeds ${_current_policy.auto_approve_under} threshold — pending human 1-click approval."
+    except Exception as e:
+        logger.error("Failed to execute PayPal order: %s", e)
+        evaluation.pricing_note += f" (PayPal execution notice: {str(e)})"
+
+
 # ── Core Deterministic Gateway Endpoint ───────────────────────────────────
 
 @app.post("/api/verify-and-pay", response_model=VerifyAndPayResponse)
@@ -206,7 +286,8 @@ async def verify_and_pay(
 ):
     """
     Main Gate: Enforces the 4 deterministic rules.
-    If all pass and PayPal is configured, creates a real PayPal Sandbox order.
+    If all pass and PayPal is configured, executes Outcome A autonomous settlement
+    (for subtotal <= auto_approve_under) or standard 2-step order creation.
     The untrusted LLM's values are NEVER used to determine price or attributes.
     """
     # 1. Resolve product record from fixtures or Channel3
@@ -227,30 +308,8 @@ async def verify_and_pay(
         product_data=product_data,
     )
 
-    # 3. If verified, create PayPal Sandbox Order if credentials available
-    settings = get_settings()
-    if (
-        evaluation.status == OrderStatus.VERIFIED_READY_FOR_PAYPAL
-        and settings.paypal_client_id
-        and settings.paypal_client_secret
-        and evaluation.channel3_record
-    ):
-        try:
-            paypal_res = await create_order(
-                reference_id=evaluation.attempt_id,
-                custom_id=f"intent_{evaluation.policy_id}",
-                description=f"Intent Verified: {evaluation.channel3_record.title[:100]}",
-                item_name=evaluation.channel3_record.title,
-                sku=evaluation.channel3_record.product_id,
-                unit_amount=evaluation.channel3_record.unit_price,
-                currency=evaluation.channel3_record.currency,
-                quantity=intent_req.quantity,
-            )
-            evaluation.paypal_order_id = paypal_res.get("id")
-        except Exception as e:
-            logger.error("Failed to create PayPal order: %s", e)
-            # We preserve verified status but note the PayPal error in pricing_note
-            evaluation.pricing_note += f" (PayPal order creation error: {str(e)})"
+    # 3. If verified, execute PayPal Sandbox Settlement (Outcome A autonomous or Outcome B approval)
+    await _execute_paypal_settlement(evaluation, intent_req)
 
     # 4. Save attempt trace to SQLite for AG Grid analytics
     await record_attempt(evaluation, intent_req)
@@ -353,27 +412,8 @@ async def agent_shop(req: AgentShopRequest):
 
     # If verified, create PayPal order
     settings = get_settings()
-    if (
-        evaluation.status == OrderStatus.VERIFIED_READY_FOR_PAYPAL
-        and settings.paypal_client_id
-        and settings.paypal_client_secret
-        and evaluation.channel3_record
-    ):
-        try:
-            paypal_res = await create_order(
-                reference_id=evaluation.attempt_id,
-                custom_id=f"intent_{evaluation.policy_id}",
-                description=f"Intent: {evaluation.channel3_record.title[:100]}",
-                item_name=evaluation.channel3_record.title,
-                sku=evaluation.channel3_record.product_id,
-                unit_amount=evaluation.channel3_record.unit_price,
-                currency=evaluation.channel3_record.currency,
-                quantity=intent_req.quantity,
-            )
-            evaluation.paypal_order_id = paypal_res.get("id")
-        except Exception as e:
-            logger.error("PayPal order error: %s", e)
-            evaluation.pricing_note += f" (PayPal order error: {str(e)})"
+    # If verified, execute PayPal Sandbox Settlement (Outcome A autonomous or Outcome B approval)
+    await _execute_paypal_settlement(evaluation, intent_req)
 
     await record_attempt(evaluation, intent_req)
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import uuid
 from decimal import Decimal
 from typing import Any
 
@@ -114,13 +115,14 @@ async def create_order(
         ],
     }
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=45.0) as client:
         response = await client.post(
             f"{settings.paypal_base_url}/v2/checkout/orders",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
                 "Prefer": "return=representation",
+                "PayPal-Request-Id": str(uuid.uuid4()),
             },
             json=order_payload,
         )
@@ -201,13 +203,14 @@ async def create_order_with_card(
         ],
     }
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=45.0) as client:
         response = await client.post(
             f"{settings.paypal_base_url}/v2/checkout/orders",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
                 "Prefer": "return=representation",
+                "PayPal-Request-Id": str(uuid.uuid4()),
             },
             json=order_payload,
         )
@@ -230,13 +233,14 @@ async def capture_order(order_id: str) -> dict:
     settings = get_settings()
     token = await _get_access_token()
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=45.0) as client:
         response = await client.post(
             f"{settings.paypal_base_url}/v2/checkout/orders/{order_id}/capture",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
                 "Prefer": "return=representation",
+                "PayPal-Request-Id": str(uuid.uuid4()),
             },
         )
         response.raise_for_status()
@@ -261,13 +265,13 @@ async def refund_capture(capture_id: str, amount: str | None = None, currency: s
             "value": amount,
         }
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=45.0) as client:
         response = await client.post(
             f"{settings.paypal_base_url}/v2/payments/captures/{capture_id}/refund",
             headers={
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
-                "Prefer": "return=representation",
+                "PayPal-Request-Id": str(uuid.uuid4()),
             },
             json=refund_payload,
         )
