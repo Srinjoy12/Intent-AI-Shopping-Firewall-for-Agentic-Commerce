@@ -1,6 +1,6 @@
 # Intent: AI Shopping Firewall for Agentic Commerce
 ## Comprehensive Project Master Status, Architecture & Progress Report
-### Updated Following Forensic Audit, AG Studio Integration & 2-Turn Self-Healing Implementation
+### Updated Following Forensic Audit, AG Studio Integration, 2-Turn Self-Healing & Official PayPal Design Language Alignment (PDS60)
 
 > **One-Sentence Pitch:** Your AI agent can shop 100M+ real products for you on PayPal—with spending limits, quantities, and structured product attributes deterministically enforced before funds move.
 >
@@ -25,7 +25,7 @@
 
 ---
 
-## 2. The 4 Critical Judge Traps & How They Were Resolved
+## 2. The 5 Critical Judge Traps & How They Were Resolved
 
 | # | Critical Judge Trap Spotted | Disqualification Risk | Engineering Fix Implemented in Codebase |
 | :--- | :--- | :--- | :--- |
@@ -33,6 +33,7 @@
 | **2** | **`llm_adapter.py` Marked as "Optional"** | Fatal for mandatory hackathon rule *"must meaningfully use both PayPal and AI"*. A purely deterministic if/else without AI inference gets disqualified. | **FIXED:** Implemented `LLMAdapter` in `backend/app/llm_adapter.py` supporting Gemini 2.5 Flash / OpenAI `gpt-4o-mini` tool-calling (`submit_order_intent`). Wired a **2-Turn Autonomous Self-Healing Loop** (`POST /api/agent/self-heal`): Turn 1 gets blocked $\to$ remediation JSON feeds back $\to$ Turn 2 auto-remediates & settles autonomously on PayPal! |
 | **3** | **Contradictory DB Rows & Swapped Screenshot Files** | Identical $949.00 orders showed different statuses (`VERIFIED_READY_FOR_PAYPAL` vs `CAPTURED`), looking like a policy engine bug. | **FIXED:** Wiped `intent.db`. Added 4th product `fixture_laptop_high_value` ($1,099.00 ThinkPad) so Outcome B is triggered by an actual $1,099 price tag. Decoupled `preset_qty_tamper` on `fixture_laptop_16gb` ($1,898) to isolate Rule 3. Added Preset 4 (`preset_bait_switch`) to isolate Rule 1. Corrected architecture docs to state Rules 1–3 evaluate exhaustively in parallel, while Rule 4 is the gate. |
 | **4** | **Missing AUTO-APPROVE THRESHOLD in Header & Missing Human Approval Button** | Judges could not see why $899 auto-captures while $1,099 halts. No button to capture Outcome B orders. | **FIXED:** Added `AUTO-APPROVE: <= $1000.00 USD` pill in `Header.jsx`. Added `Approve & Capture Order on Sandbox ($1,099.00 USD)` button in `PayPalPanel.jsx`. Hardened idempotent refund button to immediately disable and record `REFUNDED` status in SQLite. |
+| **5** | **Generic "AI Slop" & Developer-Centric Dark Dashboard UI** | High disqualification risk for top-tier design scrutiny; sponsor judges expect an authentic, consumer-trustworthy PayPal experience, not generic purple glow or dark developer templates. | **FIXED:** Inspected `https://www.paypal.com/in/home` directly. Implemented official PayPal Design System 60 (PDS60): warm neutral `#FAF8F5` canvas, pure white `#FFFFFF` cards with generous `20px` radii, official PayPal Blue (`#003087`) and Gold (`#FFD140`), vector dual-P monogram, segment controls, and 3-tier authentic global footer. |
 
 ---
 
@@ -147,12 +148,30 @@ sequenceDiagram
 
 ---
 
-## 6. Live Verification Proof & Screenshot Gallery
+## 6. Official PayPal Design Language Alignment (PDS60)
+
+Following inspection of the official production site at [paypal.com/in/home](https://www.paypal.com/in/home), the interface was completely refactored to eliminate generic "AI dashboard slop" and implement PayPal Design System 60 (PDS60) standards:
+
+| Token / Layer | Source Token on `paypal.com/in/home` | Implementation in Intent | Purpose & Visual Impact |
+| :--- | :--- | :--- | :--- |
+| **Canvas Background** | `neutral-100-plate: #FAF8F5` | `--bg-primary: #FAF8F5;` | Replaced harsh dark backgrounds with PayPal's signature warm, editorial neutral canvas. |
+| **Card Surfaces** | `white-plate: #FFFFFF` | `--bg-card: #FFFFFF; border: 1px solid #E5E7EB;` | Crisp white elevated cards with soft 1px hairline borders for maximum contrast and scannability. |
+| **Corner Curvature** | `20px` to `24px` card radii | `--radius-card: 20px;` | Applied consistent 20px curves across all 5 major panels, replacing blocky developer cards. |
+| **Pill Buttons & Tabs** | `border-radius: 9999px` | `--radius-pill: 9999px;` | Full pill styling for primary CTAs, filters, status chips, and segment controls. |
+| **Brand Colors** | Blue 700 (`#001C64`), Blue 600 (`#003087`), Gold (`#FFD140`) | Navigation, badges, headers, and checkout CTAs | Authentic PayPal blue hierarchy with official PayPal Gold (`#FFD140`) reserved exclusively for checkout settlement. |
+| **Global Navigation** | SVG interlocking dual-P monogram + wordmark | `Header.jsx` with vector monogram and nav links | Matches official brand wordmark with top links (`Firewall Engine`, `Deterministic Policy`, `Security Ledger`, `Developer Docs`). |
+| **Segment Controls** | PayPal Open rounded segmented tab pills | `AttackPresets.jsx` segment control switch | Seamlessly switches between `Curated Attacks` and `Custom Injection` without layout shift. |
+| **Global Footer** | 3-tier authentic PayPal global footer | `App.jsx` multi-tier footer component | Added Help, Fees, Security, Developers, `India · English` region selector, legal disclosures, and `© 2026 PayPal, Inc.` |
+| **Responsive Range** | Fluid responsive layouts | Breakpoints: 375px, 768px, 1280px, 1440px | Zero horizontal scroll, touch-friendly 44px+ hit targets, and clean single-column collapsing on mobile. |
+
+---
+
+## 7. Live Verification Proof & Screenshot Gallery
 
 Every component, route, and state was validated using an autonomous browser agent and captured in high resolution (`docs/screenshots/`):
 
 ### Screenshot 1: Header Policy Bar & Canonical Catalog (`01_header_policy_and_catalog.png`)
-Shows the top blue policy strip with the newly added `AUTO-APPROVE: <= $1000.00 USD` pill, live PayPal Sandbox connection, circuit breaker quotas, and 4 product selector buttons:
+Shows the top blue policy strip with the `AUTO-APPROVE: <= $1000.00 USD` pill, live PayPal Sandbox connection, circuit breaker quotas, and 4 product selector buttons:
 ![Header Policy Bar](file:///Users/srinjoyroy/Documents/Paypal%20AI%20hackathon/docs/screenshots/01_header_policy_and_catalog.png)
 
 ---
@@ -181,10 +200,34 @@ Shows the 3-column inline audit drawer comparing **Untrusted LLM Intent** vs **C
 
 ---
 
-## 7. What Is 100% Done vs What Remains for Submission
+### Screenshot 6: Official PayPal PDS60 1440px Desktop View (`06_paypal_official_1440px.png`)
+Shows the complete desktop layout styled to official `paypal.com/in/home` standards: warm neutral `#FAF8F5` background, pure white cards with `20px` radii, dual-P logo, top navigation, segment controls, and 3-tier footer:
+![Official PayPal 1440px Desktop View](file:///Users/srinjoyroy/Documents/Paypal%20AI%20hackathon/docs/screenshots/06_paypal_official_1440px.png)
+
+---
+
+### Screenshot 7: Live 2-Turn Self-Healing Settled on PayPal Sandbox (`07_paypal_official_self_healing_settled.png`)
+Shows the autonomous self-healing agent recovering from Turn 1 (spec spoof blocked by Rule 2) and settling Turn 2 on PayPal Sandbox with live capture ID `55758229E8519101W`:
+![Live Self-Healing Settled](file:///Users/srinjoyroy/Documents/Paypal%20AI%20hackathon/docs/screenshots/07_paypal_official_self_healing_settled.png)
+
+---
+
+### Screenshot 8: Custom Injection Testing Panel & Segment Controls (`08_paypal_official_custom_injection.png`)
+Shows the interactive custom prompt injection sandbox accessed via the official PayPal Open pill segment control, enabling live red-teaming against the deterministic firewall:
+![Custom Injection Panel](file:///Users/srinjoyroy/Documents/Paypal%20AI%20hackathon/docs/screenshots/08_paypal_official_custom_injection.png)
+
+---
+
+## 8. What Is 100% Done vs What Remains for Submission
 
 ### ✅ What Is 100% Complete & Verified
-- [x] **AG Grid / AG Studio Prize Readiness ($8,000 Prize Pool):** Installed `ag-grid-react` & `ag-grid-community` v36. Rendered `<AgGridReact>` with dark quartz theme, custom cell renderers, and master-detail drawer.
+- [x] **Official PayPal Design Language Alignment (PDS60):** Replaced cold dark AI slop with official warm neutral canvas (`#FAF8F5`), 20px curved white cards, PayPal Blue (`#003087`) and Gold (`#FFD140`).
+- [x] **Authentic Header & Dual-P Monogram:** Precision vector SVG dual-P interlocking monogram, official brand wordmark, navigation tabs, and live status pill.
+- [x] **PayPal Open Segment Controls:** Segmented pill controls toggling between curated attack presets and live custom prompt injection editor.
+- [x] **Authentic 3-Tier Global Footer:** Production PayPal footer with Help, Fees, Security, Developers, region selector, legal links, and copyright.
+- [x] **Multi-Breakpoint Verification:** Tested and verified across 1440px, 1280px, 768px, and 375px with zero horizontal scroll and zero console errors.
+- [x] **Formal Design Contract (`DESIGN.md`):** Complete design specification created adhering strictly to `global-web-dev.md`.
+- [x] **AG Grid / AG Studio Prize Readiness ($8,000 Prize Pool):** Installed `ag-grid-react` & `ag-grid-community` v36. Rendered `<AgGridReact>` with quartz theme, custom cell renderers, and master-detail drawer.
 - [x] **Real LLM Integration & 2-Turn Self-Healing:** Implemented `LLMAdapter` with Gemini / OpenAI support + autonomous self-healing loop (`POST /api/agent/self-heal`).
 - [x] **4 Isolated Attack Presets:** Decoupled quantity tampering to 16GB laptop ($1,898) and added Bait & Switch domain (`shady-liquidators.biz`) to isolate Rule 1.
 - [x] **Outcome A & Outcome B Complete Separation:** Clean $1,099 product (`fixture_laptop_high_value`) triggers Outcome B with 1-click human sandbox capture.
