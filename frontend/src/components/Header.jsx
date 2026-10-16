@@ -7,16 +7,17 @@ export default function Header({ policy, rateLimitStatus, health }) {
       {/* Top Global Navigation Bar */}
       <div className="paypal-nav-container">
         <div className="paypal-nav-left">
-          {/* Authentic PayPal Logo */}
+          {/* Distinctive Intent Brand Mark */}
           <div className="paypal-brand-mark">
-            <svg width="26" height="30" viewBox="0 0 28 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="PayPal Logo">
-              <path d="M23.14 8.78c-.46-3.23-2.82-5.45-6.72-5.45H6.28c-.8 0-1.47.6-1.59 1.4L1.03 27.87c-.1.65.4 1.23 1.05 1.23h5.27l1.32-8.38-.04.26c.12-.8.8-1.4 1.6-1.4h2.52c5.07 0 9.04-2.06 10.2-8.08.06-.33.11-.66.15-.99.3-1.87.11-3.2-.96-4.73z" fill="#003087"/>
-              <path d="M26.4 11.23c-.38 2.45-1.54 4.54-3.4 5.92-2.12 1.57-5.06 2.37-8.73 2.37h-2.11c-.74 0-1.37.55-1.48 1.29l-1.63 10.33c-.08.53.33 1.01.87 1.01h4.63c.66 0 1.21-.5 1.32-1.15l.05-.27 1.05-6.66.07-.38c.11-.66.66-1.15 1.32-1.15h.83c4.22 0 7.52-1.71 8.49-6.72.4-2.09.2-3.77-.96-4.99z" fill="#0070E0"/>
+            <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Intent Shield Logo">
+              <rect width="32" height="32" rx="8" fill="#001C64"/>
+              <path d="M16 5L7 9.2V16.8C7 22.3 10.8 27.4 16 29C21.2 27.4 25 22.3 25 16.8V9.2L16 5Z" fill="#003087" stroke="#0070E0" strokeWidth="1.5"/>
+              <path d="M16 9L11 11.5V16C11 19.8 13.1 23.3 16 24.5C18.9 23.3 21 19.8 21 16V11.5L16 9Z" fill="#0070E0" opacity="0.6"/>
+              <path d="M14 16.5L16 18.5L20 13.5" stroke="#FFD140" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span className="paypal-wordmark">PayPal</span>
-            <span className="brand-sep">/</span>
-            <span className="brand-product-name">Intent</span>
-            <span className="brand-suite-pill">AI Firewall</span>
+            <span className="brand-product-name" style={{ fontSize: '20px', fontWeight: 800, color: '#001C64', letterSpacing: '-0.5px' }}>Intent</span>
+            <span className="brand-suite-pill">AI Shopping Firewall</span>
+            <span className="partner-integration-chip">for PayPal Commerce</span>
           </div>
 
           {/* PayPal Top Menu Links */}

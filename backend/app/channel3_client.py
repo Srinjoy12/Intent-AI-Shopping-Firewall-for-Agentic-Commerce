@@ -203,7 +203,8 @@ def retrieve_product(product_id: str) -> dict | None:
 def find_offer_by_domain(product_data: dict, merchant_domain: str) -> dict | None:
     """Locate an offer in product.offers[] where offer.domain matches."""
     for offer in product_data.get("offers", []):
-        if offer.get("domain", "").lower() == merchant_domain.lower():
+        domain = offer.get("domain") or offer.get("merchant_domain", "")
+        if domain.lower() == merchant_domain.lower():
             return offer
     return None
 
@@ -213,7 +214,7 @@ def build_channel3_record(
 ) -> Channel3Record:
     """Build a Channel3Record from raw product data and the matched offer."""
     return Channel3Record(
-        product_id=product_data["product_id"],
+        product_id=product_data.get("product_id") or product_data.get("id", ""),
         title=product_data.get("title", ""),
         merchant_domain=merchant_domain,
         availability=offer.get("availability", ""),

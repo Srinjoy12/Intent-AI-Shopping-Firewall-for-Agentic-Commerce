@@ -25,3 +25,6 @@ out/
 Thumbs.db
 .vscode/
 .idea/
+
+# Private planning & internal debrief reports
+PROJECT_MASTER_STATUS_AND_PRD.md

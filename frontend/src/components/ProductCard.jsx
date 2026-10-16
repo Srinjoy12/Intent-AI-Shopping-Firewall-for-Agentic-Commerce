@@ -27,8 +27,8 @@ export default function ProductCard({
         <div className="selector-buttons">
           {products.map((p) => {
             const isSelected = p.product_id === selectedProductId
-            const isCompliant = p.product_id === 'fixture_laptop_16gb'
-            const isHighValue = p.product_id === 'fixture_laptop_high_value'
+            const isCompliant = p.product_id === 'pPB4LGu' || p.product_id === 'fixture_laptop_16gb'
+            const isHighValue = p.product_id === 'KXUKS23' || p.product_id === 'fixture_laptop_high_value'
             const hasNoRam = !p.structured_attributes?.ram
 
             return (

@@ -1,6 +1,11 @@
 import React, { useState, useMemo } from 'react'
 import { AgGridReact } from 'ag-grid-react'
+import { AgCharts } from 'ag-charts-react'
 import { ModuleRegistry, AllCommunityModule, themeQuartz } from 'ag-grid-community'
+import {
+  ModuleRegistry as ChartModuleRegistry,
+  AllCommunityModule as AllChartsCommunityModule,
+} from 'ag-charts-community'
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-quartz.css'
 import {
@@ -23,6 +28,9 @@ import {
 
 // Register AG Grid Community modules
 ModuleRegistry.registerModules([AllCommunityModule])
+
+// Register AG Charts Community modules
+ChartModuleRegistry.registerModules([AllChartsCommunityModule])
 
 // Custom PayPal Light Quartz theme matching official PayPal design tokens
 const paypalQuartzTheme = themeQuartz.withParams({
@@ -262,6 +270,61 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
     []
   )
 
+  // Prepare data for AG Charts visualization
+  const chartData = useMemo(() => {
+    const list = []
+    if (summary.captured_count > 0) {
+      list.push({ category: 'Captured', count: summary.captured_count })
+    }
+    if (summary.verified_count > 0) {
+      list.push({ category: 'Human Review', count: summary.verified_count })
+    }
+    const breakdown = summary.violation_breakdown || {}
+    Object.entries(breakdown).forEach(([k, count]) => {
+      const shortName = humanizeRule(k).split(' (')[0]
+      list.push({ category: shortName, count })
+    })
+    if (list.length === 0) {
+      list.push({ category: 'Standby', count: 1 })
+    }
+    return list
+  }, [summary])
+
+  const chartOptions = useMemo(
+    () => ({
+      data: chartData,
+      title: {
+        text: 'Threat & Settlement Distribution',
+        fontSize: 12,
+        fontFamily: 'Inter, system-ui, sans-serif',
+        color: '#0F172A',
+      },
+      series: [
+        {
+          type: 'donut',
+          calloutLabelKey: 'category',
+          angleKey: 'count',
+          innerRadiusRatio: 0.62,
+          fills: ['#10B981', '#0070E0', '#EF4444', '#F59E0B', '#8B5CF6'],
+        },
+      ],
+      legend: {
+        position: 'right',
+        item: {
+          label: {
+            fontSize: 11,
+            fontFamily: 'Inter, system-ui, sans-serif',
+            color: '#475569',
+          },
+        },
+      },
+      background: {
+        fill: 'transparent',
+      },
+    }),
+    [chartData]
+  )
+
   return (
     <div className="analytics-dashboard-container">
       {/* Header */}
@@ -273,7 +336,7 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
           <div>
             <div className="analytics-title-row">
               <h2 className="analytics-title">Gateway Audit Log &amp; Security Analytics</h2>
-              <span className="brand-badge">AG Grid v36</span>
+              <span className="brand-badge">AG Grid v36 &amp; AG Charts</span>
             </div>
             <p className="analytics-subtitle">
               Deterministic firewall decision history and real-time PayPal Sandbox transaction settlement ledger.
@@ -308,14 +371,14 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
 
         {/* Dollars Prevented */}
         <div className="kpi-card warning">
-          <span className="kpi-label">Overspend Prevented</span>
+          <span className="kpi-label">Blocked Attempt Value</span>
           <div className="kpi-val-row">
             <DollarSign size={18} className="text-warning" />
             <span className="kpi-val text-warning">
               ${Number(summary.dollars_prevented || 0).toFixed(2)}
             </span>
           </div>
-          <span className="kpi-sub">Halted Before Funds Moved</span>
+          <span className="kpi-sub">Prevented Rogue Spend</span>
         </div>
 
         {/* Safely Captured */}
@@ -340,34 +403,43 @@ export default function AnalyticsDashboard({ analytics, attempts, onRefresh }) {
         </div>
       </div>
 
-      {/* Rule Violation Breakdown */}
+      {/* Rule Violation Breakdown & Live AG Chart */}
       <div className="violation-breakdown-card">
-        <div className="breakdown-header">
-          <BarChart3 size={15} className="text-slate-500" />
-          <h4 className="breakdown-title">Interception Distribution by Rule</h4>
-        </div>
+        <div className="breakdown-grid-layout">
+          <div>
+            <div className="breakdown-header">
+              <BarChart3 size={15} className="text-slate-500" />
+              <h4 className="breakdown-title">Interception Distribution by Rule</h4>
+            </div>
 
-        <div className="breakdown-bars">
-          {Object.keys(summary.violation_breakdown || {}).length > 0 ? (
-            Object.entries(summary.violation_breakdown).map(([rule, count]) => {
-              const pct = summary.total_attempts
-                ? Math.round((count / summary.total_attempts) * 100)
-                : 0
-              return (
-                <div key={rule} className="breakdown-item">
-                  <div className="breakdown-item-header">
-                    <span className="rule-key">{humanizeRule(rule)}</span>
-                    <span className="rule-count">{count} hit(s) ({pct}%)</span>
-                  </div>
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${Math.min(pct, 100)}%` }}></div>
-                  </div>
-                </div>
-              )
-            })
-          ) : (
-            <span className="empty-breakdown-note">No violations recorded yet. Run presets above to populate live audit entries.</span>
-          )}
+            <div className="breakdown-bars">
+              {Object.keys(summary.violation_breakdown || {}).length > 0 ? (
+                Object.entries(summary.violation_breakdown).map(([rule, count]) => {
+                  const pct = summary.total_attempts
+                    ? Math.round((count / summary.total_attempts) * 100)
+                    : 0
+                  return (
+                    <div key={rule} className="breakdown-item">
+                      <div className="breakdown-item-header">
+                        <span className="rule-key">{humanizeRule(rule)}</span>
+                        <span className="rule-count">{count} hit(s) ({pct}%)</span>
+                      </div>
+                      <div className="progress-track">
+                        <div className="progress-fill" style={{ width: `${Math.min(pct, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  )
+                })
+              ) : (
+                <span className="empty-breakdown-note">No violations recorded yet. Run presets above to populate live audit entries.</span>
+              )}
+            </div>
+          </div>
+
+          {/* Authentic AG Chart Component */}
+          <div className="ag-chart-panel" style={{ height: 180, width: '100%' }}>
+            <AgCharts options={chartOptions} />
+          </div>
         </div>
       </div>
 

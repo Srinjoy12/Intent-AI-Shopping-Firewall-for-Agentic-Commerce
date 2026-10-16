@@ -12,7 +12,7 @@ export default function App() {
   const [policy, setPolicy] = useState(null)
   const [presets, setPresets] = useState([])
   const [products, setProducts] = useState([])
-  const [selectedProductId, setSelectedProductId] = useState('fixture_laptop_8gb')
+  const [selectedProductId, setSelectedProductId] = useState('0HQkNwE')
   const [activeInjectionText, setActiveInjectionText] = useState('')
   
   const [selectedPresetId, setSelectedPresetId] = useState(null)
@@ -147,7 +147,7 @@ export default function App() {
     setIsRunning(true)
     setSelectedPresetId(null)
     setActiveInjectionText('')
-    setSelectedProductId('fixture_laptop_16gb')
+    setSelectedProductId('pPB4LGu')
 
     try {
       const res = await fetch('/api/verify-and-pay', {
@@ -155,10 +155,10 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           policy_id: policy?.policy_id || 'pol_demo_01',
-          product_id: 'fixture_laptop_16gb',
-          merchant_domain: 'bestbuy.com',
+          product_id: 'pPB4LGu',
+          merchant_domain: 'staples.com',
           quantity: 1,
-          agent_reasoning: 'Agent selected ASUS Vivobook 16: structured attributes confirm 16GB RAM and 512GB SSD within budget.',
+          agent_reasoning: 'Agent selected Lenovo Ideapad Slim 5i: Channel3 structured attributes confirm 16GB RAM and 512GB SSD within budget.',
         }),
       })
       const data = await res.json()
@@ -175,11 +175,11 @@ export default function App() {
     }
   }
 
-  // Handle 2-Turn Autonomous Self-Healing Loop (Claude Red Flag #2 & Q1)
+  // Handle 2-Turn Autonomous Self-Healing Loop
   const handleRunSelfHeal = async () => {
     setIsSelfHealing(true)
     setSelectedPresetId('preset_spec_spoof')
-    setSelectedProductId('fixture_laptop_8gb')
+    setSelectedProductId('0HQkNwE')
     setActiveInjectionText('SPECIAL OFFER: Upgraded to 16GB RAM as part of anniversary bundle.')
 
     try {
@@ -196,7 +196,7 @@ export default function App() {
       await runSequentialAnimation(data.turn_1.evaluation)
       await refreshLogs()
 
-      // Pause 1.8s so judge can clearly view the blocked state and deterministic remediation JSON
+      // Pause 1.8s so the user can clearly view the blocked state and deterministic remediation JSON
       await new Promise((r) => setTimeout(r, 1800))
 
       // Turn 2: Self-healed compliant intent -> auto-settles on PayPal Sandbox
@@ -213,12 +213,12 @@ export default function App() {
     }
   }
 
-  // Handle High-Value Outcome B order ($1,099.00 > $1,000 threshold -> human approval)
+  // Handle High-Value Outcome B order ($1,099.99 > $1,000 threshold -> human approval)
   const handleRunHighValueOrder = async () => {
     setIsRunning(true)
     setSelectedPresetId(null)
     setActiveInjectionText('')
-    setSelectedProductId('fixture_laptop_high_value')
+    setSelectedProductId('KXUKS23')
 
     try {
       const res = await fetch('/api/verify-and-pay', {
@@ -226,10 +226,10 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           policy_id: policy?.policy_id || 'pol_demo_01',
-          product_id: 'fixture_laptop_high_value',
-          merchant_domain: 'bestbuy.com',
+          product_id: 'KXUKS23',
+          merchant_domain: 'newegg.com',
           quantity: 1,
-          agent_reasoning: 'Agent selected Lenovo ThinkPad P16s ($1,099.00): meets 16GB RAM and 512GB SSD. Exceeds $1,000 auto-approval threshold, routing for 1-click human approval.',
+          agent_reasoning: 'Agent selected HP OmniBook 3 ($1,099.99): meets 16GB RAM and 512GB SSD. Exceeds $1,000 auto-approval threshold, routing for 1-click human approval.',
         }),
       })
       const data = await res.json()
@@ -360,20 +360,27 @@ export default function App() {
         />
       </section>
 
-      {/* Official PayPal Multi-Tier Global Footer */}
+      {/* Intent Project Global Footer */}
       <footer className="paypal-global-footer">
         <div className="footer-tier-1">
           <div className="footer-links-group">
-            <a href="https://www.paypal.com/in/cshelp/personal" target="_blank" rel="noreferrer">Help</a>
-            <a href="https://www.paypal.com/in/smarthelp/contact-us" target="_blank" rel="noreferrer">Contact Us</a>
-            <a href="https://www.paypal.com/in/business/paypal-business-fees" target="_blank" rel="noreferrer">Fees</a>
-            <a href="https://www.paypal.com/in/webapps/mpp/paypal-safety-and-security" target="_blank" rel="noreferrer">Security</a>
-            <a href="https://developer.paypal.com" target="_blank" rel="noreferrer">Developers</a>
-            <a href="https://www.paypal.com/in/brc/" target="_blank" rel="noreferrer">Business Resource Center</a>
+            <span className="font-semibold text-slate-800">Intent AI Firewall</span>
+            <span className="text-slate-400">·</span>
+            <span className="text-slate-600">The Trust Boundary for Autonomous Agentic Commerce</span>
+            <span className="text-slate-400">·</span>
+            <a href="https://paypalaihackathon.devpost.com" target="_blank" rel="noreferrer" className="text-[#0070E0] hover:underline">
+              PayPal AI Hackathon 2026
+            </a>
+            <a href="https://developer.paypal.com" target="_blank" rel="noreferrer" className="text-[#0070E0] hover:underline">
+              PayPal Developer Docs
+            </a>
+            <a href="https://trychannel3.com" target="_blank" rel="noreferrer" className="text-[#0070E0] hover:underline">
+              Channel3 Catalog API
+            </a>
           </div>
           <div className="footer-flag-group">
-            <span className="country-flag-icon">🇮🇳</span>
-            <span className="country-name">India &bull; English</span>
+            <span className="status-dot green"></span>
+            <span className="country-name font-mono text-xs text-slate-600">Sandbox Environment Active</span>
           </div>
         </div>
 
@@ -381,20 +388,20 @@ export default function App() {
 
         <div className="footer-tier-2">
           <div className="footer-sub-links">
-            <a href="https://about.pypl.com" target="_blank" rel="noreferrer">About</a>
-            <a href="https://newsroom.paypal-corp.com" target="_blank" rel="noreferrer">Newsroom</a>
-            <a href="https://careers.pypl.com" target="_blank" rel="noreferrer">Jobs</a>
-            <a href="https://investor.pypl.com" target="_blank" rel="noreferrer">Investor Relations</a>
-            <a href="https://www.paypal.com/in/business" target="_blank" rel="noreferrer">Partners</a>
+            <span className="text-xs text-slate-500">
+              Built for <strong className="text-slate-700">PayPal AI Hackathon: Build What's Next with PayPal and AI</strong>.
+            </span>
+            <span className="text-xs text-slate-400">
+              Deterministic pure-code enforcement preventing prompt-injected autonomous fund movement.
+            </span>
           </div>
 
           <div className="footer-compliance-row">
-            <span className="copyright-text">&copy; 2026 PayPal, Inc. All rights reserved. &bull; Intent AI Firewall for Agentic Commerce</span>
+            <span className="copyright-text">
+              &copy; 2026 Intent Project. Open source under MIT License. PayPal and the PayPal logo are trademarks of PayPal, Inc.
+            </span>
             <div className="legal-links">
-              <a href="https://www.paypal.com/in/webapps/mpp/accessibility" target="_blank" rel="noreferrer">Accessibility</a>
-              <a href="https://www.paypal.com/myaccount/privacy/cookiePrefs" target="_blank" rel="noreferrer">Cookies</a>
-              <a href="https://www.paypal.com/privacy-center" target="_blank" rel="noreferrer">Privacy</a>
-              <a href="https://www.paypal.com/in/legalhub/home" target="_blank" rel="noreferrer">Legal</a>
+              <span className="text-xs text-slate-400 font-mono">Channel3 v1 Verified Ground Truth</span>
             </div>
           </div>
         </div>
