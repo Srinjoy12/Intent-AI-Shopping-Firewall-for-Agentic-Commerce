@@ -33,8 +33,19 @@ logger = logging.getLogger("intent.audit")
 # Fixed 64-character hex Genesis Hash for the first block (seq = 1)
 GENESIS_HASH: str = "0" * 64
 
-# In-memory lock to guarantee task-level sequential serialization
-_APPEND_LOCK = asyncio.Lock()
+# In-memory lock to guarantee task-level sequential serialization across event loops
+_append_lock: Optional[asyncio.Lock] = None
+
+
+def _get_append_lock() -> asyncio.Lock:
+    global _append_lock
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if _append_lock is None or (_append_lock._loop is not None and _append_lock._loop != loop):
+        _append_lock = asyncio.Lock()
+    return _append_lock
 
 
 @dataclass
@@ -106,7 +117,7 @@ async def append_audit_event(
     Acquires an in-memory lock + SQLite BEGIN IMMEDIATE to ensure concurrent writers cannot fork the chain.
     Carries session_id tag when originating from a demo sandbox session.
     """
-    async with _APPEND_LOCK:
+    async with _get_append_lock():
         now_iso = datetime.now(timezone.utc).isoformat()
         ev_id = event_id or f"ev_{uuid.uuid4().hex[:12]}"
         

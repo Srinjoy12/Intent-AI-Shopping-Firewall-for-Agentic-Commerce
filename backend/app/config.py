@@ -6,7 +6,9 @@ from functools import lru_cache
 
 from pathlib import Path
 
-ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = BACKEND_DIR.parent
+ENV_PATH = ROOT_DIR / ".env" if (ROOT_DIR / ".env").exists() else BACKEND_DIR / ".env"
 
 
 class Settings(BaseSettings):

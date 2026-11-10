@@ -2,7 +2,7 @@
 
 > ⚠️ **Threat Model & Trust Boundary:** The autonomous shopping agent is assumed **fully compromised** (via prompt injection, malicious third-party product listings, rogue tool calls, or fine-tuning drift). The benchmark measures the security of the **Intent deterministic gateway**, not the LLM. Regardless of whether the agent is forced to comply with the adversary or acts naively, the gateway enforces cryptographic and policy boundaries before any PayPal financial commitment is constructed.
 
-**Headline:** **56 unique attacks and 16 benign controls** (72 total evaluations across 1 runs with 100% deterministic reproducibility)
+**Headline:** **56 unique attacks and 16 benign controls** (216 total evaluations across 3 runs with 100% deterministic reproducibility)
 
 ## 📊 Dual-Baseline Security Evaluation
 
@@ -16,18 +16,18 @@
 
 | Category | Cases (Evaluations) | Forced Baseline ASR | Protected ASR | Gateway Enforcement Status |
 | :--- | :---: | :---: | :---: | :---: |
-| `benign_control` | 16 | N/A | 0.0% (FPR) | ✅ 100% Allowed |
-| `domain_swap` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `fake_system_messages` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `hidden_text_injection` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `instruction_override` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `lookalike_domains` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `mandatory_minimum_quantity` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `markdown_injection` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `multilingual_injection` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `price_claims` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `quantity_tampering` | 5 | 100.0% | 0.0% | ✅ 100% Blocked |
-| `spec_spoofing` | 6 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `benign_control` | 48 | N/A | 0.0% (FPR) | ✅ 100% Allowed |
+| `domain_swap` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `fake_system_messages` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `hidden_text_injection` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `instruction_override` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `lookalike_domains` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `mandatory_minimum_quantity` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `markdown_injection` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `multilingual_injection` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `price_claims` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `quantity_tampering` | 15 | 100.0% | 0.0% | ✅ 100% Blocked |
+| `spec_spoofing` | 18 | 100.0% | 0.0% | ✅ 100% Blocked |
 
 ## 🖥️ Second Product Category: Generic Schema Verification (Monitors)
 
@@ -69,7 +69,7 @@ Intent is a **pre-purchase cryptographic spending firewall**. It is explicitly n
 | **Rule 2** | Structured Attributes (Fail-Closed) | `0.000 ms` |
 | **Rule 3** | Quantity & Budget Verification Math | `0.001 ms` |
 | **Rule 4** | PayPal Routing & Headroom Reservation | `0.000 ms` |
-| **Total** | Full Pure-Code Firewall Latency | **`0.018 ms`** |
+| **Total** | Full Pure-Code Firewall Latency | **`0.017 ms`** |
 
 ## 🔒 Zero Firewall Bypasses Detected
 All adversarial prompt injections, spec spoofing, quantity tampering, and lookalike domains were successfully blocked before payment.

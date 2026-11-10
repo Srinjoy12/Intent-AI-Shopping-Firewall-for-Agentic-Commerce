@@ -178,9 +178,8 @@ The agent parses the remediation feedback, sees that `staples-thinkpad-p1-001` s
 
 ---
 
-## 📸 Intent MCP Architecture in Action
+## Intent MCP Architecture in Action
 
-![Intent MCP Architecture and Human Approval Channel](/docs/screenshots/mcp_architecture.png)
+<!-- Placeholder for MCP Architecture Diagram / Screenshot: Curated assets will be placed in docs/images/ -->
 
-*(Screenshot placeholder: MCP server connected to Claude Desktop, executing purchases under Intent mandate oversight with live Telegram approval escalation)*
 

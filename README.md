@@ -475,31 +475,7 @@ Intent features a calm, dense, precise enterprise fintech security console built
 - **Anti-Slop Guarantees:** 0 emojis (Lucide 16px icons only), 0 gradients on controls/cards, 0 neumorphic shadows/glow/blur, 0 nested cards.
 - **Accessibility:** Strict WCAG AA compliance (text contrast >= 4.5:1 across all tabs), visible focus rings (`2px solid #0070E0`), `prefers-reduced-motion` support, and zero horizontal body overflow across mobile (375px), tablet (768px), laptop (1024px/1280px), and desktop (1440px).
 
-### High-Resolution Screenshot Suite (`docs/screenshots/`)
-
-| Screenshot | Description |
-| :--- | :--- |
-| `01_compliant_order_captured.png` | Fully verified order ($899.99 Lenovo 16GB) auto-settled on PayPal Sandbox with live capture ID. |
-| `01_header_policy_and_catalog.png` | 56px top bar with Intent shield, active mandate relative time, and 4-SKU catalog radio list. |
-| `02_attack_arena_and_presets.png` | Flat bordered scenario panel with 3 action rows and custom prompt injection disclosure. |
-| `02_spec_spoof_blocked.png` | Spec spoof attack intercepted: agent tricked into 8GB Dell laptop blocked at Rule 2 ($0 spent). |
-| `03_outcome_b_human_approval.png` | High-value order ($1,099.99 > $1,000 threshold) routed to 1-click human supervisor approval hold. |
-| `03_pipeline_blocked_rule2.png` | 4-step pipeline close-up showing Rule 1 passed, Rule 2 blocked, and Rules 3–4 halted. |
-| `04_ag_grid_threat_audit.png` | Dedicated Audit ledger tab hosting AG Grid v36 with clean borders, 44px rows, and 4px status tags. |
-| `04_full_console_1440px.png` | Complete 1440px desktop overview of the 12-column Intent firewall console (5/12 Scenario, 7/12 Result). |
-| `05_ag_grid_master_detail_drawer.png` | Master-detail Attempt Inspector drawer showing item, merchant, decision, and raw timestamp. |
-| `06_paypal_official_1440px.png` | Official PayPal Orders v2 sandbox integration panel with live settlement receipt. |
-| `07_paypal_official_self_healing_settled.png` | 2-turn self-healing loop completion view with PayPal capture ID and remediation trail. |
-| `08_paypal_official_custom_injection.png` | Interactive custom prompt injection red-team disclosure with clean textarea and quantity input. |
-| `09_intent_shield_and_ag_charts.png` | Adversarial Benchmark tab with AG Charts comparing baseline (73.2% ASR) vs Intent (0.0%). |
-| `10_intent_live_self_healing_verified.png` | End-to-end trace of autonomous recovery with signed SHA-256 audit chain verification. |
-| `11_human_approval_confirmation_page.png` | Minimalist enterprise supervisor 1-click approval confirmation interface (`/api/approvals/action`). |
-| `12_responsive_1024px.png` | Clean responsive layout at 1024px laptop/tablet landscape viewport. |
-| `13_responsive_768px.png` | Clean single-column responsive layout at 768px tablet portrait viewport with zero horizontal overflow. |
-| `14_responsive_375px.png` | Mobile responsive layout at 375px viewport with wrapped top bar and internal table scrolling. |
-| `15_mandate_details_popover.png` | Cryptographic mandate popover detailing Ed25519 signature, policy hash, and budget limits. |
-| `16_issue_mandate_modal.png` | Centered 560px modal with 2-column form, inline validation, and cryptographic Ed25519 issuance. |
-| `17_kill_switch_modal.png` | Focused kill-switch confirmation dialog explaining operational impact with filled destructive action. |
+<!-- DEMO MEDIA PLACEHOLDER: Add demo video link and curated high-resolution UI walkthrough images to docs/images/ -->
 
 ---
 
@@ -543,10 +519,11 @@ make tamper-demo
 ## Security, Threat Model & Multi-Tenant Sandbox
 
 For in-depth architectural and cryptographic documentation, see:
+- 🏗️ **[System Architecture & Persistence](docs/ARCHITECTURE.md):** Complete specifications for the 4-rule deterministic engine, Ed25519 mandates, persistent disk layout, and PayPal webhook cryptographic anchoring.
 - 📖 **[Endpoint Authentication & Mutation Matrix](docs/ENDPOINT_AUTH_MATRIX.md):** Complete catalog of all endpoints, authentication requirements, and state mutation properties.
 - 🛡️ **[Threat Model & Security Architecture](docs/THREAT_MODEL.md):** Formal adversary classes, trust boundaries, what Intent defends, and honest out-of-scope boundaries.
 - 🔌 **[MCP Server Specification](docs/MCP.md):** Integration guide for Model Context Protocol agent tool calls.
-- 🚀 **[Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md):** Production hardening checklist, PostgreSQL migration, and Docker deployment.
+- 🎨 **[Design System Contract](docs/DESIGN.md):** Enterprise fintech design tokens, typography, and anti-slop rules.
 
 ### Multi-Tenant Demo Sandbox Architecture
 In public demo mode (`APP_MODE=demo`), external visitors and hackathon evaluators can interact with the firewall without administrative keys:

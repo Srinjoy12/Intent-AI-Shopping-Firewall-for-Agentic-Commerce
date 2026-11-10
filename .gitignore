@@ -1,30 +1,77 @@
-# Python
+# ==============================================================================
+# Intent AI Gateway — Git Ignore Configuration
+# ==============================================================================
+
+# Environment Variables & Secrets (Keep only .env.example)
+.env*
+!.env.example
+
+# Databases & SQLite State
+*.db
+*.sqlite
+*.sqlite3
+intent.db
+
+# API Output Dumps & Local Logs
+out/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Python & Virtual Environments
 venv/
+.venv/
+env/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .pytest_cache/
-*.db
-intent.db
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+tmp/
 
-# Environment variables
-.env
-!.env.example
-
-# Node / Frontend
+# Node & Frontend Build Outputs
 node_modules/
 dist/
+dist-ssr/
 build/
 .next/
-out/
 .vercel/
 
-# OS / IDE
+# OS Metadata & Editor Swaps
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
+*.swp
+*.swo
+*~
+*.bak
+*.orig
 
-# Private planning & internal debrief reports
+# IDE Configurations
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# AI Assistant, Planning & Local Knowledge Graph Clutter
+.agent/
+.agents/
+.gemini/
+.taste-skill/
+graphify-out/
 PROJECT_MASTER_STATUS_AND_PRD.md
+
+# Staged Screenshots & Recordings (Keeps directory empty until curated images are added)
+docs/screenshots/*
+!docs/screenshots/.gitkeep
+
+# Note: docs/images/ is intentionally NOT ignored for curated public documentation assets.

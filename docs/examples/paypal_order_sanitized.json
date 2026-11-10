@@ -1,0 +1,44 @@
+{
+  "id": "1TK83499XXXXXXXXX",
+  "intent": "CAPTURE",
+  "status": "COMPLETED",
+  "payment_source": {
+    "card": {
+      "name": "Intent Authorized Buyer",
+      "last_digits": "1111",
+      "expiry": "2028-12",
+      "brand": "VISA",
+      "type": "CREDIT"
+    }
+  },
+  "purchase_units": [
+    {
+      "reference_id": "intent_settlement_01",
+      "custom_id": "intent:audit_anchor:sha256_hash_here",
+      "invoice_id": "attempt_01JK8888888888888888888888",
+      "amount": {
+        "currency_code": "USD",
+        "value": "899.99",
+        "breakdown": {
+          "item_total": {
+            "currency_code": "USD",
+            "value": "899.99"
+          }
+        }
+      },
+      "payments": {
+        "captures": [
+          {
+            "id": "76967998XXXXXXXXX",
+            "status": "COMPLETED",
+            "amount": {
+              "currency_code": "USD",
+              "value": "899.99"
+            },
+            "final_capture": true
+          }
+        ]
+      }
+    }
+  ]
+}

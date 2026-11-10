@@ -25,7 +25,7 @@ Modern AI shopping agents operate under inherently hostile conditions:
 3. **Cumulative Spending Headroom:** Hard multi-window budget caps (daily limits, weekly limits, per-merchant caps, and per-hour velocity limits) backed by immediate reservations.
 4. **Audit Trail Immutability:** SHA-256 Merkle chain linking every proposal, decision, approval, and reservation, anchored into PayPal order records via `custom_id`.
 5. **Human Approval Tokens:** Single-use, HMAC-SHA256 stateless tokens with 15-minute validity, protected by strict CSRF and GET/POST separation.
-6. **Provider API Quotas:** Per-session rate limits preventing external judges or abusive clients from exhausting Channel3 or PayPal sandboxes.
+6. **Provider API Quotas:** Per-session rate limits preventing external evaluators or abusive clients from exhausting Channel3 or PayPal sandboxes.
 
 ---
 
@@ -238,7 +238,7 @@ To enable public evaluation and hackathon judging without exposing administrativ
      - **Refunds:** Session B cannot issue refunds against PayPal captures belonging to Session A (`HTTP 403 REFUND_FORBIDDEN`).
      - **Attempts & Analytics:** Attempt logs and summary metrics are strictly filtered by `session_id`, ensuring zero cross-tenant ledger leakage.
 4. **Denial-of-Service Defense:**
-   - Per-session rate limiting restricts requests to 30 requests/hour per session. An abusive visitor cannot exhaust the quota of another concurrent judge or visitor.
+   - Per-session rate limiting restricts requests to 30 requests/hour per session. An abusive visitor cannot exhaust the quota of another concurrent evaluator or visitor.
    - Sandboxes automatically expire after 2 hours (`SESSION_TTL_HOURS = 2`), with periodic database cleanup sweeps removing stale tenant state.
 
 ---
