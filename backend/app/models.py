@@ -2,7 +2,7 @@
 
 # no future annotations
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Any
 from enum import Enum
 
 
@@ -22,12 +22,24 @@ class ViolationRule(str, Enum):
     UNVERIFIABLE_ATTRIBUTE = "UNVERIFIABLE_ATTRIBUTE"
     MAX_QUANTITY_EXCEEDED = "MAX_QUANTITY_EXCEEDED"
     BUDGET_EXCEEDED = "BUDGET_EXCEEDED"
+    MANDATE_NOT_FOUND = "MANDATE_NOT_FOUND"
+    MANDATE_EXPIRED = "MANDATE_EXPIRED"
+    MANDATE_REVOKED = "MANDATE_REVOKED"
+    MANDATE_SIGNATURE_INVALID = "MANDATE_SIGNATURE_INVALID"
+    MANDATE_AGENT_MISMATCH = "MANDATE_AGENT_MISMATCH"
+    DAILY_LIMIT_EXCEEDED = "DAILY_LIMIT_EXCEEDED"
+    WEEKLY_LIMIT_EXCEEDED = "WEEKLY_LIMIT_EXCEEDED"
+    MERCHANT_LIMIT_EXCEEDED = "MERCHANT_LIMIT_EXCEEDED"
+    VELOCITY_LIMIT_EXCEEDED = "VELOCITY_LIMIT_EXCEEDED"
+    PRICE_DRIFT = "PRICE_DRIFT"
 
 
 class RemediationAction(str, Enum):
     SWITCH_PRODUCT = "SWITCH_PRODUCT"
     REDUCE_QUANTITY = "REDUCE_QUANTITY"
     SWITCH_PRODUCT_AND_SET_QUANTITY = "SWITCH_PRODUCT_AND_SET_QUANTITY"
+    WAIT_OR_REDUCE = "WAIT_OR_REDUCE"
+    RETRY_LATER = "RETRY_LATER"
 
 
 # ── Spending Policy (Server-Side) ─────────────────────────────────────────
@@ -55,7 +67,8 @@ class SpendingPolicy(BaseModel):
 class OrderIntentRequest(BaseModel):
     """What the shopping LLM submits — references only, no prices or specs."""
 
-    policy_id: str
+    mandate_id: Optional[str] = None
+    policy_id: Optional[str] = None
     product_id: str
     merchant_domain: str
     quantity: int = Field(..., ge=1)
@@ -64,6 +77,12 @@ class OrderIntentRequest(BaseModel):
         max_length=500,
         description="The LLM's stated reasoning (logged but never trusted)",
     )
+
+    def model_post_init(self, __context) -> None:
+        if not self.mandate_id and self.policy_id:
+            self.mandate_id = self.policy_id
+        elif not self.policy_id and self.mandate_id:
+            self.policy_id = self.mandate_id
 
 
 # ── Channel3 Product Data (Gateway-Pulled) ─────────────────────────────────
@@ -107,6 +126,7 @@ class Remediation(BaseModel):
     allowed_quantity: int | None = None
     exclude_product_ids: list[str] = Field(default_factory=list)
     instruction: str = ""
+    remaining_headroom: Optional[str] = None
 
 
 class GatewayEvaluationResponse(BaseModel):
@@ -114,6 +134,7 @@ class GatewayEvaluationResponse(BaseModel):
 
     attempt_id: str
     policy_id: str
+    mandate_id: Optional[str] = None
     status: OrderStatus
     channel3_record: Channel3Record | None = None
     computed_subtotal: str | None = None
@@ -124,6 +145,10 @@ class GatewayEvaluationResponse(BaseModel):
     # PayPal fields (populated when status is CAPTURED or VERIFIED_READY_FOR_PAYPAL)
     paypal_order_id: str | None = None
     paypal_capture_id: str | None = None
+
+    def model_post_init(self, __context) -> None:
+        if not self.mandate_id and self.policy_id:
+            self.mandate_id = self.policy_id
 
 
 # ── Red-Team Preset ────────────────────────────────────────────────────────
@@ -150,7 +175,12 @@ class VerifyAndPayResponse(BaseModel):
 
     evaluation: GatewayEvaluationResponse
     agent_request: OrderIntentRequest
-    policy: SpendingPolicy
+    policy: Optional[SpendingPolicy] = None
+    mandate: Optional[Any] = None
+    approval_id: Optional[str] = None
+    needs_human_approval: bool = False
+    approval_token: Optional[str] = None
+    escalation_reason: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
@@ -158,6 +188,12 @@ class HealthResponse(BaseModel):
     channel3_configured: bool = False
     paypal_configured: bool = False
     llm_provider: str = "stub"
+    app_mode: str = "demo"
+    app_env: str = "development"
+    key_source: str = "generated"  # "env" | "generated"
+    database_type: str = "sqlite"  # "sqlite" | "postgresql"
+    persistent_storage: bool = True
+    worker_count: int = 1
 
 
 # Rebuild models to resolve forward references with Pydantic v2

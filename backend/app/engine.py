@@ -39,7 +39,7 @@ def _generate_attempt_id() -> str:
 
 def verify_order_intent(
     request: OrderIntentRequest,
-    policy: SpendingPolicy,
+    policy: SpendingPolicy | Any,
     product_data: dict | None = None,
 ) -> GatewayEvaluationResponse:
     """
@@ -47,7 +47,7 @@ def verify_order_intent(
 
     Args:
         request: The untrusted LLM submission (product_id, domain, quantity only).
-        policy: The server-side spending policy with budget and attribute requirements.
+        policy: The verified signed mandate or spending policy with budget and attribute limits.
         product_data: Optional pre-fetched product data (for cached/fixture products).
                       If None, we call Channel3 retrieve().
 
@@ -55,6 +55,7 @@ def verify_order_intent(
         GatewayEvaluationResponse with BLOCKED or VERIFIED_READY_FOR_PAYPAL status.
     """
     attempt_id = _generate_attempt_id()
+    effective_policy_id = getattr(policy, "mandate_id", getattr(policy, "policy_id", request.mandate_id or request.policy_id or ""))
     violations: list[Violation] = []
 
     # ── Step 0: Retrieve product from Channel3 (server-to-server) ──────────
@@ -65,7 +66,8 @@ def verify_order_intent(
     if product_data is None:
         return GatewayEvaluationResponse(
             attempt_id=attempt_id,
-            policy_id=request.policy_id,
+            policy_id=effective_policy_id,
+            mandate_id=effective_policy_id,
             status=OrderStatus.BLOCKED,
             violations=[
                 Violation(
@@ -82,18 +84,35 @@ def verify_order_intent(
 
     # ── Rule 1: Offer Domain & Availability ────────────────────────────────
 
-    offer = find_offer_by_domain(product_data, request.merchant_domain)
+    allowed_domains = getattr(policy, "allowed_domains", None)
+    if allowed_domains is None:
+        allowed_domains = getattr(policy, "allowed_merchant_domains", None)
 
-    if offer is None:
+    if allowed_domains and request.merchant_domain not in allowed_domains:
         violations.append(
             Violation(
                 rule=ViolationRule.OFFER_UNAVAILABLE,
                 detail=(
-                    f"No offer found for domain '{request.merchant_domain}' "
-                    f"in product {request.product_id}."
+                    f"Merchant domain '{request.merchant_domain}' is not in "
+                    f"authorized domains list: {allowed_domains}."
                 ),
             )
         )
+
+    offer = find_offer_by_domain(product_data, request.merchant_domain)
+
+    if offer is None:
+        # Avoid duplicate violation if already flagged for not in allowed_domains
+        if not any(v.rule == ViolationRule.OFFER_UNAVAILABLE for v in violations):
+            violations.append(
+                Violation(
+                    rule=ViolationRule.OFFER_UNAVAILABLE,
+                    detail=(
+                        f"No offer found for domain '{request.merchant_domain}' "
+                        f"in product {request.product_id}."
+                    ),
+                )
+            )
     elif offer.get("availability", "").lower() != policy.required_availability.lower():
         violations.append(
             Violation(
@@ -126,8 +145,11 @@ def verify_order_intent(
     # ── Rule 2: Structured Attributes Only (Fail-Closed) ───────────────────
 
     product_attrs = product_data.get("structured_attributes", {}) or {}
+    req_attrs = getattr(policy, "required_attributes", None)
+    if req_attrs is None:
+        req_attrs = getattr(policy, "required_structured_attributes", {}) or {}
 
-    for attr_key, required_value in policy.required_structured_attributes.items():
+    for attr_key, required_value in req_attrs.items():
         actual_value = product_attrs.get(attr_key)
 
         if actual_value is None:
@@ -229,7 +251,8 @@ def verify_order_intent(
 
         return GatewayEvaluationResponse(
             attempt_id=attempt_id,
-            policy_id=request.policy_id,
+            policy_id=effective_policy_id,
+            mandate_id=effective_policy_id,
             status=OrderStatus.BLOCKED,
             channel3_record=channel3_record,
             computed_subtotal=f"{computed_subtotal:.2f}",
@@ -249,7 +272,8 @@ def verify_order_intent(
 
     return GatewayEvaluationResponse(
         attempt_id=attempt_id,
-        policy_id=request.policy_id,
+        policy_id=effective_policy_id,
+        mandate_id=effective_policy_id,
         status=OrderStatus.VERIFIED_READY_FOR_PAYPAL,
         channel3_record=channel3_record,
         computed_subtotal=f"{computed_subtotal:.2f}",

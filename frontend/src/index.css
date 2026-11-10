@@ -1,80 +1,9 @@
-/* Intent — AI Shopping Firewall
-   Official PayPal 60 Design System (PDS60)
-   Directly matching https://www.paypal.com/in/home
-*/
+/* ==========================================================================
+   Intent — AI Shopping Firewall
+   Global Base Reset & Enterprise Typography
+   ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
-:root {
-  /* Official PayPal 60 Color Plates */
-  --bg-primary: #FAF8F5;          /* neutral-100-plate */
-  --surface: #FFFFFF;             /* white-plate */
-  --surface-raised: #FFFFFF;
-  --surface-subtle: #F5F6F8;
-  --surface-plate: #FAF8F5;
-  --border: #EAEBED;              /* Official hairline border */
-  --border-focus: #0070E0;
-  
-  /* PayPal Brand Spectrum */
-  --color-blue-700: #001C64;      /* Deep authoritative blue / Dark navy */
-  --color-blue-600: #003087;      /* Core PayPal brand blue */
-  --color-blue-500: #0070E0;      /* PayPal lively blue for links & active states */
-  --color-blue-subtle: #EBF5FF;
-  --color-gold-plate: #FFD140;     /* Signature PayPal gold */
-  --color-gold-hover: #F2C42B;
-  
-  /* Aliases for compatibility */
-  --color-paypal-navy: #001C64;
-  --color-paypal-blue: #0070E0;
-  --color-paypal-blue-hover: #005EA6;
-  --color-paypal-blue-subtle: #EBF5FF;
-  --color-paypal-gold: #FFD140;
-  --color-paypal-gold-hover: #F2C42B;
-
-  /* Typography Colors */
-  --text-primary: #001435;        /* Ultra-dark navy (15:1 contrast) */
-  --text-secondary: #4A5568;      /* Neutral slate body (6:1 contrast) */
-  --text-tertiary: #718096;
-  
-  /* Status Semantics */
-  --accent-verdict: #0070E0;
-  --accent-verdict-glow: rgba(0, 112, 224, 0.12);
-  
-  --danger: #D92D20;
-  --danger-bg: #FEF3F2;
-  --danger-border: #FEE4E2;
-  --danger-text: #B42318;
-  
-  --success: #059669;
-  --success-bg: #E6F7EF;
-  --success-border: #A6F4C5;
-  --success-text: #027A48;
-  
-  --warning: #B54708;
-  --warning-bg: #FFFAEB;
-  --warning-border: #FEDF89;
-  --warning-text: #B54708;
-  
-  --neutral-tag: #0284C7;
-  --neutral-tag-bg: #F0F9FF;
-  
-  /* Fonts */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  
-  /* Radii — PayPal 60 Signature Curves */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-card: 20px;            /* Standard PayPal 60 card radius */
-  --radius-pill: 9999px;          /* Full Pill for buttons & chips */
-  
-  /* Refined Modern Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 20, 53, 0.04);
-  --shadow-card: 0 2px 8px rgba(0, 20, 53, 0.04), 0 1px 2px rgba(0, 20, 53, 0.02);
-  --shadow-raised: 0 8px 24px rgba(0, 20, 53, 0.08);
-  --shadow-modal: 0 20px 48px -8px rgba(0, 20, 53, 0.14), 0 8px 20px -4px rgba(0, 20, 53, 0.06);
-}
+@import './styles/tokens.css';
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -82,69 +11,60 @@
   padding: 0;
 }
 
-html, body {
-  background-color: var(--bg-primary);
+html {
+  min-height: 100vh;
+  background-color: #F3F6FA;
+}
+
+body {
+  background: var(--bg-page);
+  background-attachment: fixed;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: var(--text-base);
+  line-height: var(--line-height-normal);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-code, pre, .font-mono {
+code, pre, .font-mono, .mono-hash, .receipt-data-val {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 button {
   font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
   cursor: pointer;
   border: none;
   background: none;
-  transition: all 0.18s ease;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
 
-button:focus-visible {
-  outline: 2px solid var(--color-blue-500);
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--action-blue);
   outline-offset: 2px;
 }
 
-input, textarea {
+input, textarea, select {
   font-family: inherit;
+  font-size: var(--text-base);
+  color: var(--text-primary);
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+/* Tabular numbers for all numeric indicators */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: var(--radius-pill);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.fade-in {
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

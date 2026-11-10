@@ -1,5 +1,5 @@
 import React from 'react'
-import { Laptop, AlertTriangle, ShieldCheck, CheckCircle2, ShieldAlert } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 
 export default function ProductCard({
   products,
@@ -10,147 +10,140 @@ export default function ProductCard({
 }) {
   const currentOffer = currentProduct?.offers?.[0] || {
     domain: 'bestbuy.com',
-    price: '799.00',
+    price: '749.99',
     currency: 'USD',
     availability: 'InStock',
   }
 
+  const verifiedRam = currentProduct?.structured_attributes?.ram || 'Unknown'
+  const verifiedStorage = currentProduct?.structured_attributes?.storage || currentProduct?.structured_attributes?.['storage-capacity'] || '512 GB'
+  const isSpoofedDell = currentProduct?.product_id === '0HQkNwE' && (activeInjectionText || '').includes('16GB')
+
+  // Agent claim derivation
+  const hasInjection = Boolean(activeInjectionText && activeInjectionText.trim())
+  const agentClaimedRam = isSpoofedDell ? '16 GB (Spoofed)' : verifiedRam
+  const isRamMismatch = isSpoofedDell || (hasInjection && activeInjectionText.includes('16GB') && !verifiedRam.includes('16'))
+
   return (
-    <div className="product-card-container">
-      {/* Product Selector Bar */}
-      <div className="product-selector-row">
-        <div className="selector-header">
-          <span className="selector-label">Catalog Items</span>
-          <span className="selector-hint">Select a product to inspect deterministic attributes</span>
-        </div>
-
-        <div className="selector-buttons">
-          {products.map((p) => {
-            const isSelected = p.product_id === selectedProductId
-            const isCompliant = p.product_id === 'pPB4LGu' || p.product_id === 'fixture_laptop_16gb'
-            const isHighValue = p.product_id === 'KXUKS23' || p.product_id === 'fixture_laptop_high_value'
-            const hasNoRam = !p.structured_attributes?.ram
-
-            return (
-              <button
-                key={p.product_id}
-                type="button"
-                className={`selector-btn ${isSelected ? 'active' : ''}`}
-                onClick={() => onSelectProduct(p.product_id)}
-              >
-                <Laptop size={14} className="selector-icon" />
-                <span className="selector-title">{p.title.split('-')[0].trim()}</span>
-                {isCompliant && (
-                  <span className="btn-tag success">16GB RAM · Safe</span>
-                )}
-                {isHighValue && (
-                  <span className="btn-tag warning">$1,099 · Review</span>
-                )}
-                {hasNoRam && (
-                  <span className="btn-tag danger">No RAM Handle</span>
-                )}
-                {!isCompliant && !isHighValue && !hasNoRam && (
-                  <span className="btn-tag">8GB RAM</span>
-                )}
-              </button>
-            )
-          })}
-        </div>
+    <div className="panel product-panel">
+      <div className="panel-header">
+        <h2 className="panel-title">Product</h2>
       </div>
 
-      {/* Main Product Card */}
-      <div className="product-details-content">
-        <div className="product-header-block">
-          <div className="product-title-wrap">
-            <div className="sku-breadcrumb">
-              <span className="sku-source">Channel3 Catalog</span>
-              <span className="sku-sep">/</span>
-              <span className="sku-code font-mono">
-                {currentProduct?.product_id?.startsWith('fixture_')
-                  ? `SKU-${currentProduct.product_id.replace('fixture_', '').toUpperCase()}`
-                  : `SKU-${currentProduct?.product_id?.toUpperCase()}`}
-              </span>
+      {/* Selectable Vertical Radio List of Catalog Products */}
+      <div className="product-radio-list" role="radiogroup" aria-label="Catalog products">
+        {products.map((p) => {
+          const isSelected = p.product_id === selectedProductId
+          const price = p.offers?.[0]?.price || '0.00'
+          const pRam = p.structured_attributes?.ram || 'Unindexed RAM'
+
+          return (
+            <div
+              key={p.product_id}
+              role="radio"
+              aria-checked={isSelected}
+              tabIndex={0}
+              className={`product-radio-row ${isSelected ? 'is-selected' : ''}`}
+              onClick={() => onSelectProduct(p.product_id)}
+              onKeyDown={(e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                  e.preventDefault()
+                  onSelectProduct(p.product_id)
+                }
+              }}
+            >
+              <div className="radio-indicator" aria-hidden="true">
+                <div className={`radio-dot ${isSelected ? 'dot-active' : ''}`} />
+              </div>
+              <div className="product-row-info">
+                <span className="product-row-title" title={p.title}>
+                  {p.title}
+                </span>
+                <span className="product-row-ram">{pRam}</span>
+              </div>
+              <div className="product-row-price font-mono tabular-nums">
+                ${price}
+              </div>
             </div>
-            <h2 className="product-title">{currentProduct?.title}</h2>
-          </div>
-          <div className="product-price-block">
-            <span className="product-price">${currentOffer.price}</span>
-            <span className="product-currency">{currentOffer.currency} · Free Delivery</span>
-          </div>
+          )
+        })}
+      </div>
+
+      <div className="panel-divider" />
+
+      {/* Two-Column Comparison Table */}
+      <div className="spec-comparison-section">
+        <div className="table-responsive">
+          <table className="comparison-table">
+            <thead>
+              <tr>
+                <th scope="col" className="col-field">Field</th>
+                <th scope="col" className="col-verified">Channel3 (verified)</th>
+                <th scope="col" className="col-claim">Agent claim</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="field-name">Product</td>
+                <td className="verified-val" title={currentProduct?.title}>{currentProduct?.title?.split('-')[0]?.trim()}</td>
+                <td className="claim-val">{currentProduct?.title?.split('-')[0]?.trim()}</td>
+              </tr>
+              <tr>
+                <td className="field-name">SKU</td>
+                <td className="verified-val font-mono">{currentProduct?.product_id}</td>
+                <td className="claim-val font-mono">{currentProduct?.product_id}</td>
+              </tr>
+              <tr>
+                <td className="field-name">Merchant</td>
+                <td className="verified-val font-mono">{currentOffer.domain}</td>
+                <td className="claim-val font-mono">{currentOffer.domain}</td>
+              </tr>
+              <tr>
+                <td className="field-name">Availability</td>
+                <td className="verified-val">{currentOffer.availability}</td>
+                <td className="claim-val">{currentOffer.availability}</td>
+              </tr>
+              <tr>
+                <td className="field-name">RAM</td>
+                <td className="verified-val font-mono">{verifiedRam}</td>
+                <td className={`claim-val ${isRamMismatch ? 'has-mismatch' : ''}`}>
+                  {isRamMismatch ? (
+                    <span className="mismatch-badge status-tag status-tag-danger">
+                      <AlertCircle size={13} aria-hidden="true" />
+                      <span>{agentClaimedRam}</span>
+                    </span>
+                  ) : (
+                    <span className="font-mono">{verifiedRam}</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="field-name">Storage</td>
+                <td className="verified-val font-mono">{verifiedStorage}</td>
+                <td className="claim-val font-mono">{verifiedStorage}</td>
+              </tr>
+              <tr>
+                <td className="field-name">Price</td>
+                <td className="verified-val font-mono tabular-nums">${currentOffer.price}</td>
+                <td className="claim-val font-mono tabular-nums">${currentOffer.price}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        <div className="product-metadata-row">
-          <div className="meta-item">
-            <span className="meta-label">Merchant:</span>
-            <strong>{currentOffer.domain}</strong>
-          </div>
-          <div className="meta-item">
-            <span className="meta-label">Inventory:</span>
-            <strong className="text-success">{currentOffer.availability}</strong>
-          </div>
-          <div className="meta-item">
-            <span className="meta-label">Data Authority:</span>
-            <strong>Channel3 Verified</strong>
-          </div>
-        </div>
-
-        {/* Side-by-side Attribute Comparison */}
-        <div className="attrs-comparison-grid">
-          {/* Authoritative Structured Attributes */}
-          <div className="attr-col verified-side">
-            <div className="attr-col-header">
-              <ShieldCheck size={16} className="text-success" />
-              <h3>Server-Side Structured Attributes</h3>
+        {/* Monospace Injected Block or Muted Status Note */}
+        {hasInjection ? (
+          <div className="injection-evidence-block">
+            <div className="evidence-header">
+              <span className="evidence-label">Injected prompt payload</span>
             </div>
-            <p className="attr-col-sub">
-              Deterministic key-value handles parsed directly from retailer catalog feeds.
-            </p>
-
-            <div className="attrs-tags-list">
-              {currentProduct?.structured_attributes &&
-              Object.keys(currentProduct.structured_attributes).length > 0 ? (
-                Object.entries(currentProduct.structured_attributes).map(([key, val]) => {
-                  const isRam = key.toLowerCase() === 'ram'
-                  return (
-                    <div key={key} className={`attr-tag ${isRam ? 'highlight' : ''}`}>
-                      <span className="attr-key">{key.toUpperCase()}</span>
-                      <span className="attr-val font-mono">{String(val)}</span>
-                    </div>
-                  )
-                })
-              ) : (
-                <div className="attr-tag empty-alert">
-                  <AlertTriangle size={15} className="text-danger shrink-0" />
-                  <span>Missing required RAM handle — Gateway will fail-closed at Rule 2.</span>
-                </div>
-              )}
-            </div>
+            <code className="evidence-text font-mono">"{activeInjectionText}"</code>
           </div>
-
-          {/* Merchant Free-Text Description (Untrusted Vector) */}
-          <div className="attr-col untrusted-side">
-            <div className="attr-col-header">
-              <AlertTriangle size={16} className="text-warning" />
-              <h3>Merchant Marketing Listing (Untrusted)</h3>
-            </div>
-            <p className="attr-col-sub">
-              Unstructured text that LLMs scrape. Vulnerable to prompt injection and marketing embellishment.
-            </p>
-
-            <div className="untrusted-text-box">
-              <p className="base-desc">{currentProduct?.description}</p>
-              {activeInjectionText && (
-                <div className="injected-payload-box">
-                  <div className="injection-flag-row">
-                    <ShieldAlert size={14} className="text-danger" />
-                    <span className="injection-flag">Adversarial Injection Found in Listing</span>
-                  </div>
-                  <p className="injection-content">"{activeInjectionText}"</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        ) : (
+          <p className="no-injection-note">
+            No injected content in this scenario
+          </p>
+        )}
       </div>
     </div>
   )

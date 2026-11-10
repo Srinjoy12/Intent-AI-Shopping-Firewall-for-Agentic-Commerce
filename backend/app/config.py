@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     paypal_client_id: str = ""
     paypal_client_secret: str = ""
     paypal_base_url: str = "https://api-m.sandbox.paypal.com"
+    paypal_webhook_id: str = ""
 
     # LLM
     llm_provider: str = "stub"  # "openai" | "gemini" | "anthropic" | "stub"
@@ -34,6 +35,30 @@ class Settings(BaseSettings):
 
     # Cache
     channel3_cache_ttl_seconds: int = 3600
+
+    # Cryptographic Mandates & Authentication
+    admin_api_key: str = "admin_super_secret_test_key"
+    demo_agent_key: str = "demo_agent_secret_test_key"
+    mandate_signing_key: str = ""
+    price_drift_tolerance: str = "0.01"
+    # CSRF: stateless HMAC secret for approval confirmation pages.
+    # Required in production — set a long random value (e.g. openssl rand -hex 32).
+    csrf_secret: str = "dev_csrf_secret_change_me_in_production"
+
+    # App Environment & Mode
+    app_env: str = "development"  # "development" | "production" | "test"
+    app_mode: str = "demo"  # "demo" | "admin"
+    debug: bool = False
+
+    # Database & Storage
+    database_path: str = ""
+    database_url: str = ""
+    web_concurrency: int = 1
+
+    # Per-Visitor Demo Sandbox
+    session_secret: str = "dev_session_secret_change_me_in_production"
+    session_ttl_hours: int = 2
+    session_rate_limit_per_hour: int = 30
 
     model_config = {
         "env_file": str(ENV_PATH),

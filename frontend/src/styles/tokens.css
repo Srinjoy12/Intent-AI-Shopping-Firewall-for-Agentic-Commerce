@@ -1,0 +1,95 @@
+/* ==========================================================================
+   Intent — Design Tokens
+   Single Source of Truth: Modern, Minimalist Enterprise Fintech Dashboard
+   ========================================================================== */
+
+:root {
+  /* ── Background & Surfaces ──────────────────────────────────────────────── */
+  --bg-page: linear-gradient(180deg, #FFFFFF 0%, #F3F6FA 100%);
+  --surface-panel: #FFFFFF;
+  --surface-hover: #F6F8FA;
+  --surface-active: #E8F1FD;
+  --surface-code: #F6F8FA;
+
+  /* ── Borders & Dividers ─────────────────────────────────────────────────── */
+  --border-subtle: #E3E8EF;
+  --border-strong: #CBD3DF;
+  --border-focus: #0070E0;
+
+  /* ── Text Hierarchy (all text >= 4.5:1 contrast against surfaces) ────────── */
+  --text-primary: #0F1B33;   /* High contrast primary text */
+  --text-secondary: #55627A; /* Factual, clear secondary text */
+  --text-disabled: #8C97AA;  /* Inactive / disabled text */
+
+  /* ── Brand & Action Colors ──────────────────────────────────────────────── */
+  --brand-navy: #003087;     /* Wordmarks, primary headings, table headers */
+  --action-blue: #0070E0;    /* Primary buttons, active tabs, links, focus */
+  --action-hover: #005EC4;   /* Primary button hover */
+  --action-focus-outline: 2px solid #0070E0;
+
+  /* ── Status Tokens (always paired with icon + text) ─────────────────────── */
+  --status-success: #0A7D4F;
+  --status-success-bg: #E8F5EE;
+  --status-danger: #B42318;
+  --status-danger-bg: #FDECEA;
+  --status-warning: #9A5B00;
+  --status-warning-bg: #FFF4E0;
+  --status-info: #0058B8;
+  --status-info-bg: #E8F1FD;
+
+  /* ── Typography Scale & Weights ─────────────────────────────────────────── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+
+  /* ── Spacing Scale (4, 8, 12, 16, 24, 32, 48) ───────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* ── Geometry & Radii (Anti-slop: 6px cards/controls, 4px tags, NO pills) ── */
+  --radius-card: 6px;
+  --radius-panel: 6px;
+  --radius-control: 6px;
+  --radius-tag: 4px;
+
+  /* ── Elevation / Shadows (Flat design: none or at most subtle 1px-2px) ──── */
+  --shadow-none: none;
+  --shadow-popover: 0 1px 2px rgba(16, 24, 40, 0.05);
+
+  /* ── Motion & Animation ─────────────────────────────────────────────────── */
+  --transition-fast: 150ms ease-out;
+
+  /* ── Legacy Aliases for Seamless Component Backward Compatibility ───────── */
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --surface-inset: #F6F8FA;
+  --brand-blue: var(--action-blue);
+  --brand-ink: var(--text-primary);
+  --brand-muted: var(--text-secondary);
+  --color-success: var(--status-success);
+  --bg-success-tint: var(--status-success-bg);
+  --color-danger: var(--status-danger);
+  --bg-danger-tint: var(--status-danger-bg);
+  --color-warning: var(--status-warning);
+  --bg-warning-tint: var(--status-warning-bg);
+  --color-info: var(--status-info);
+  --bg-info-tint: var(--status-info-bg);
+}

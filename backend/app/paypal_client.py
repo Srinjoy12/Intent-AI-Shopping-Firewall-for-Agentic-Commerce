@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 import logging
+import os
 import uuid
 from decimal import Decimal
 from typing import Any
@@ -68,6 +69,8 @@ async def create_order(
     currency: str,
     quantity: int,
     intent: str = "CAPTURE",
+    invoice_id: str | None = None,
+    paypal_request_id: str | None = None,
 ) -> dict:
     """
     Create a PayPal order via POST /v2/checkout/orders.
@@ -82,37 +85,39 @@ async def create_order(
     # Compute item total
     item_total = f"{Decimal(unit_amount) * quantity:.2f}"
 
-    order_payload = {
-        "intent": intent,
-        "purchase_units": [
-            {
-                "reference_id": reference_id,
-                "custom_id": custom_id,
-                "description": description,
-                "amount": {
+    pu_item = {
+        "reference_id": reference_id,
+        "custom_id": custom_id,
+        "description": description,
+        "amount": {
+            "currency_code": currency,
+            "value": item_total,
+            "breakdown": {
+                "item_total": {
                     "currency_code": currency,
                     "value": item_total,
-                    "breakdown": {
-                        "item_total": {
-                            "currency_code": currency,
-                            "value": item_total,
-                        }
-                    },
+                }
+            },
+        },
+        "items": [
+            {
+                "name": item_name[:127],  # PayPal 127-char limit
+                "sku": sku,
+                "unit_amount": {
+                    "currency_code": currency,
+                    "value": unit_amount,
                 },
-                "items": [
-                    {
-                        "name": item_name[:127],  # PayPal 127-char limit
-                        "sku": sku,
-                        "unit_amount": {
-                            "currency_code": currency,
-                            "value": unit_amount,
-                        },
-                        "quantity": str(quantity),
-                        "category": "PHYSICAL_GOODS",
-                    }
-                ],
+                "quantity": str(quantity),
+                "category": "PHYSICAL_GOODS",
             }
         ],
+    }
+    if invoice_id:
+        pu_item["invoice_id"] = invoice_id[:127]
+
+    order_payload = {
+        "intent": intent,
+        "purchase_units": [pu_item],
     }
 
     async with httpx.AsyncClient(timeout=45.0) as client:
@@ -122,7 +127,7 @@ async def create_order(
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
                 "Prefer": "return=representation",
-                "PayPal-Request-Id": str(uuid.uuid4()),
+                "PayPal-Request-Id": paypal_request_id or str(uuid.uuid4()),
             },
             json=order_payload,
         )
@@ -135,6 +140,10 @@ async def create_order(
         data.get("status"),
     )
     return data
+
+
+# Alias for staging high-value or new-merchant orders pending human 1-click approval
+create_order_for_human_approval = create_order
 
 
 # ── Order Creation with Card (Synchronous Capture Test) ────────────────────
@@ -153,6 +162,8 @@ async def create_order_with_card(
     card_number: str,
     card_expiry: str,
     card_name: str = "Intent Sandbox Buyer",
+    invoice_id: str | None = None,
+    paypal_request_id: str | None = None,
 ) -> dict:
     """
     Create a PayPal order with payment_source.card for synchronous capture.
@@ -163,6 +174,36 @@ async def create_order_with_card(
 
     item_total = f"{Decimal(unit_amount) * quantity:.2f}"
 
+    pu_item = {
+        "reference_id": reference_id,
+        "custom_id": custom_id,
+        "description": description,
+        "amount": {
+            "currency_code": currency,
+            "value": item_total,
+            "breakdown": {
+                "item_total": {
+                    "currency_code": currency,
+                    "value": item_total,
+                }
+            },
+        },
+        "items": [
+            {
+                "name": item_name[:127],
+                "sku": sku,
+                "unit_amount": {
+                    "currency_code": currency,
+                    "value": unit_amount,
+                },
+                "quantity": str(quantity),
+                "category": "PHYSICAL_GOODS",
+            }
+        ],
+    }
+    if invoice_id:
+        pu_item["invoice_id"] = invoice_id[:127]
+
     order_payload = {
         "intent": "CAPTURE",
         "payment_source": {
@@ -172,35 +213,7 @@ async def create_order_with_card(
                 "name": card_name,
             }
         },
-        "purchase_units": [
-            {
-                "reference_id": reference_id,
-                "custom_id": custom_id,
-                "description": description,
-                "amount": {
-                    "currency_code": currency,
-                    "value": item_total,
-                    "breakdown": {
-                        "item_total": {
-                            "currency_code": currency,
-                            "value": item_total,
-                        }
-                    },
-                },
-                "items": [
-                    {
-                        "name": item_name[:127],
-                        "sku": sku,
-                        "unit_amount": {
-                            "currency_code": currency,
-                            "value": unit_amount,
-                        },
-                        "quantity": str(quantity),
-                        "category": "PHYSICAL_GOODS",
-                    }
-                ],
-            }
-        ],
+        "purchase_units": [pu_item],
     }
 
     async with httpx.AsyncClient(timeout=45.0) as client:
@@ -210,7 +223,7 @@ async def create_order_with_card(
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
                 "Prefer": "return=representation",
-                "PayPal-Request-Id": str(uuid.uuid4()),
+                "PayPal-Request-Id": paypal_request_id or str(uuid.uuid4()),
             },
             json=order_payload,
         )
@@ -228,7 +241,7 @@ async def create_order_with_card(
 # ── Capture ────────────────────────────────────────────────────────────────
 
 
-async def capture_order(order_id: str) -> dict:
+async def capture_order(order_id: str, paypal_request_id: str | None = None) -> dict:
     """Capture an approved PayPal order."""
     settings = get_settings()
     token = await _get_access_token()
@@ -240,7 +253,7 @@ async def capture_order(order_id: str) -> dict:
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
                 "Prefer": "return=representation",
-                "PayPal-Request-Id": str(uuid.uuid4()),
+                "PayPal-Request-Id": paypal_request_id or str(uuid.uuid4()),
             },
         )
         response.raise_for_status()
@@ -253,7 +266,12 @@ async def capture_order(order_id: str) -> dict:
 # ── Refund ─────────────────────────────────────────────────────────────────
 
 
-async def refund_capture(capture_id: str, amount: str | None = None, currency: str = "USD") -> dict:
+async def refund_capture(
+    capture_id: str,
+    amount: str | None = None,
+    currency: str = "USD",
+    paypal_request_id: str | None = None,
+) -> dict:
     """Refund a captured payment."""
     settings = get_settings()
     token = await _get_access_token()
@@ -293,3 +311,78 @@ async def check_paypal_health() -> bool:
     except Exception as e:
         logger.warning("PayPal health check failed: %s", e)
         return False
+
+
+# ── Order Lookup & Webhook Verification ────────────────────────────────────
+
+async def get_order(order_id: str) -> dict[str, Any]:
+    """Fetch order details from PayPal Sandbox API."""
+    settings = get_settings()
+    token = await _get_access_token()
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            f"{settings.paypal_base_url}/v2/checkout/orders/{order_id}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+async def verify_webhook_signature(
+    headers: dict[str, str],
+    body: dict[str, Any],
+    webhook_id: str | None = None,
+) -> bool:
+    """
+    Validate PayPal webhook signature using POST /v1/notifications/verify-webhook-signature.
+    Returns True if verification_status is 'SUCCESS', otherwise False.
+    """
+    settings = get_settings()
+    wh_id = webhook_id or getattr(settings, "paypal_webhook_id", "") or os.environ.get("PAYPAL_WEBHOOK_ID", "")
+    if not wh_id:
+        logger.warning("PAYPAL_WEBHOOK_ID is not configured in environment or settings")
+        return False
+
+    # Extract required headers (case-insensitive)
+    lower_headers = {k.lower(): v for k, v in headers.items()}
+    auth_algo = lower_headers.get("paypal-auth-algo")
+    cert_url = lower_headers.get("paypal-cert-url")
+    transmission_id = lower_headers.get("paypal-transmission-id")
+    transmission_sig = lower_headers.get("paypal-transmission-sig")
+    transmission_time = lower_headers.get("paypal-transmission-time")
+
+    if not all([auth_algo, cert_url, transmission_id, transmission_sig, transmission_time]):
+        logger.warning("Missing required PayPal webhook headers for signature verification")
+        return False
+
+    token = await _get_access_token()
+    verify_payload = {
+        "auth_algo": auth_algo,
+        "cert_url": cert_url,
+        "transmission_id": transmission_id,
+        "transmission_sig": transmission_sig,
+        "transmission_time": transmission_time,
+        "webhook_id": wh_id,
+        "webhook_event": body,
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(
+            f"{settings.paypal_base_url}/v1/notifications/verify-webhook-signature",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            },
+            json=verify_payload,
+        )
+        if response.status_code != 200:
+            logger.error("PayPal webhook verification returned error status %d: %s", response.status_code, response.text)
+            return False
+
+        result = response.json()
+        return result.get("verification_status") == "SUCCESS"
+

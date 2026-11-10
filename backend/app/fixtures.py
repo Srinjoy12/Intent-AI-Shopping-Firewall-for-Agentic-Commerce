@@ -156,6 +156,173 @@ FIXTURE_PRODUCTS["fixture_laptop_16gb"] = FIXTURE_PRODUCTS["pPB4LGu"]
 FIXTURE_PRODUCTS["fixture_laptop_high_value"] = FIXTURE_PRODUCTS["KXUKS23"]
 FIXTURE_PRODUCTS["fixture_laptop_no_ram_attr"] = FIXTURE_PRODUCTS["Svjdoov"]
 
+# Test fixture products for concurrency and price drift testing:
+FIXTURE_PRODUCTS["prod_item_200"] = {
+    "product_id": "prod_item_200",
+    "title": "Developer Workspace Peripheral - $200",
+    "description": "Compliant workspace accessory with 16GB RAM attribute at $200.00 for concurrency limits testing.",
+    "image_url": "https://example.com/item200.jpg",
+    "source": "fixture",
+    "structured_attributes": {
+        "brand": "IntentLabs",
+        "ram": "16 GB",
+        "storage": "512 GB",
+    },
+    "offers": [
+        {
+            "domain": "staples.com",
+            "url": "https://www.staples.com/item200",
+            "price": "200.00",
+            "currency": "USD",
+            "availability": "InStock",
+            "condition": "New",
+        }
+    ],
+}
+
+FIXTURE_PRODUCTS["prod_drifting_price"] = {
+    "product_id": "prod_drifting_price",
+    "title": "Volatile Commodity Hardware",
+    "description": "Commodity item that demonstrates pre-capture price drift detection.",
+    "image_url": "https://example.com/drifting.jpg",
+    "source": "fixture",
+    "structured_attributes": {
+        "brand": "IntentLabs",
+        "ram": "16 GB",
+        "storage": "512 GB",
+    },
+    "offers": [
+        {
+            "domain": "staples.com",
+            "url": "https://www.staples.com/drift",
+            "price": "500.00",
+            "currency": "USD",
+            "availability": "InStock",
+            "condition": "New",
+        }
+    ],
+}
+
+FIXTURE_PRODUCTS["prod_flagship_1600"] = {
+    "product_id": "prod_flagship_1600",
+    "title": "Enterprise Flagship Studio Workstation - 16GB RAM - 512GB SSD",
+    "description": "High-end developer workstation priced at $1,599.99 to test budget cap enforcement against deceptive sale claims.",
+    "image_url": "https://example.com/workstation1600.jpg",
+    "source": "fixture",
+    "structured_attributes": {
+        "brand": "IntentLabs",
+        "ram": "16 GB",
+        "storage": "512 GB",
+    },
+    "offers": [
+        {
+            "domain": "staples.com",
+            "url": "https://www.staples.com/studio1600",
+            "price": "1599.99",
+            "currency": "USD",
+            "availability": "InStock",
+            "condition": "New",
+        }
+    ],
+}
+
+
+# ── Second Product Category Fixtures: Monitors (Attribute Schema: screen_size, resolution, refresh_rate) ──
+FIXTURE_PRODUCTS["mon_lg_27_4k_144hz"] = {
+    "product_id": "mon_lg_27_4k_144hz",
+    "title": "LG UltraGear 27\" 4K UHD 144Hz Gaming Monitor (27GR93U-B)",
+    "description": "27-inch 4K UHD (3840 x 2160) IPS monitor with 144Hz refresh rate, 1ms response, HDMI 2.1.",
+    "image_url": "https://example.com/lg27.jpg",
+    "source": "channel3",
+    "structured_attributes": {
+        "brand": "LG",
+        "screen_size": "27 inch",
+        "resolution": "4K UHD",
+        "refresh_rate": "144Hz",
+    },
+    "offers": [
+        {
+            "domain": "bestbuy.com",
+            "url": "https://www.bestbuy.com/site/lg-ultragear-27/6555683.p",
+            "price": "499.99",
+            "currency": "USD",
+            "availability": "InStock",
+            "condition": "New",
+        }
+    ],
+}
+
+FIXTURE_PRODUCTS["mon_dell_24_fhd_60hz"] = {
+    "product_id": "mon_dell_24_fhd_60hz",
+    "title": "Dell 24\" FHD 1080p Monitor - 60Hz (SE2422HX)",
+    "description": "24-inch Full HD 1080p desktop office monitor with 60Hz refresh rate.",
+    "image_url": "https://example.com/dell24.jpg",
+    "source": "channel3",
+    "structured_attributes": {
+        "brand": "Dell",
+        "screen_size": "24 inch",
+        "resolution": "1080p",
+        "refresh_rate": "60Hz",
+    },
+    "offers": [
+        {
+            "domain": "staples.com",
+            "url": "https://www.staples.com/dell24",
+            "price": "119.99",
+            "currency": "USD",
+            "availability": "InStock",
+            "condition": "New",
+        }
+    ],
+}
+
+FIXTURE_PRODUCTS["mon_viewsonic_27_no_refresh"] = {
+    "product_id": "mon_viewsonic_27_no_refresh",
+    "title": "ViewSonic 27\" Commercial Display (No Refresh Spec)",
+    "description": "Commercial 27-inch display missing the refresh rate in structured attributes.",
+    "image_url": "https://example.com/viewsonic27.jpg",
+    "source": "channel3",
+    "structured_attributes": {
+        "brand": "ViewSonic",
+        "screen_size": "27 inch",
+        "resolution": "QHD",
+    },
+    "offers": [
+        {
+            "domain": "newegg.com",
+            "url": "https://www.newegg.com/viewsonic27",
+            "price": "249.99",
+            "currency": "USD",
+            "availability": "InStock",
+            "condition": "New",
+        }
+    ],
+}
+
+FIXTURE_PRODUCTS["mon_apple_studio_5k"] = {
+    "product_id": "mon_apple_studio_5k",
+    "title": "Apple Studio Display 27\" 5K Retina Display",
+    "description": "27-inch 5K Retina display with 60Hz refresh rate priced at $1,599.00.",
+    "image_url": "https://example.com/applestudio.jpg",
+    "source": "channel3",
+    "structured_attributes": {
+        "brand": "Apple",
+        "screen_size": "27 inch",
+        "resolution": "5K",
+        "refresh_rate": "60Hz",
+    },
+    "offers": [
+        {
+            "domain": "bestbuy.com",
+            "url": "https://www.bestbuy.com/site/apple-studio/6555684.p",
+            "price": "1599.00",
+            "currency": "USD",
+            "availability": "InStock",
+            "condition": "New",
+        }
+    ],
+}
+
 
 # ── Red-Team Presets ───────────────────────────────────────────────────────
 
@@ -240,8 +407,9 @@ def get_fixture_product(product_id: str) -> dict | None:
 
 
 def get_all_fixture_products() -> list[dict]:
-    """Get all fixture products for display."""
-    return list(FIXTURE_PRODUCTS.values())
+    """Get all fixture products for display (canonical only, no aliases)."""
+    canonical_ids = ["0HQkNwE", "pPB4LGu", "KXUKS23", "Svjdoov"]
+    return [FIXTURE_PRODUCTS[pid] for pid in canonical_ids if pid in FIXTURE_PRODUCTS]
 
 
 def get_red_team_presets() -> list[RedTeamPreset]:

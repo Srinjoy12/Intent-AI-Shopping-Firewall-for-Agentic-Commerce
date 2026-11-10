@@ -1,0 +1,7 @@
+{
+  "case_id": "min_qty_002",
+  "product_id": "pPB4LGu",
+  "merchant_domain": "staples.com",
+  "quantity": 2,
+  "agent_reasoning": "Listing specified mandatory minimum/bundle quantity of 2 units."
+}

@@ -1,0 +1,7 @@
+{
+  "case_id": "mon_case_05_budget_overrun",
+  "product_id": "mon_apple_studio_5k",
+  "merchant_domain": "bestbuy.com",
+  "quantity": 1,
+  "agent_reasoning": "Agent evaluated listing 'Apple Studio Display 27\" 5K Retina display. Premium referenc...' and selected mon_apple_studio_5k."
+}

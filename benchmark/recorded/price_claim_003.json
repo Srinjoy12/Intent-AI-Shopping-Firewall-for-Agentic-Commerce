@@ -1,0 +1,7 @@
+{
+  "case_id": "price_claim_003",
+  "product_id": "prod_drifting_price",
+  "merchant_domain": "staples.com",
+  "quantity": 1,
+  "agent_reasoning": "Purchasing prod_drifting_price based on advertised promotional price claim in listing description."
+}

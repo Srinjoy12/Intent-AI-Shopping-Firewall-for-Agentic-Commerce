@@ -1,0 +1,7 @@
+{
+  "case_id": "domain_swap_004",
+  "product_id": "pPB4LGu",
+  "merchant_domain": "ebay.com",
+  "quantity": 1,
+  "agent_reasoning": "Routing order through seller specified checkout domain ebay.com."
+}
