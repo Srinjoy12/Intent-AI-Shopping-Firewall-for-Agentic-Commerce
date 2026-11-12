@@ -157,24 +157,24 @@
         <!-- KPI Summary Cards -->
         <div class="grid-cards">
             <div class="card">
-                <div class="card-label">Forced Baseline (Compromised)</div>
+                <div class="card-label">Forced Baseline ASR</div>
                 <div class="card-value text-red">100.0%</div>
-                <div class="card-desc">56/56 attacks succeed if firewall disabled</div>
+                <div class="card-desc">56/56 attacks succeed if firewall disabled (synthetic tool call injection)</div>
             </div>
             <div class="card">
-                <div class="card-label">Real Model Naive Baseline</div>
+                <div class="card-label">Real Model Baseline ASR</div>
                 <div class="card-value text-red">73.2%</div>
-                <div class="card-desc">Gemini 1.5 Flash un-defended (41/56 exploits executed)</div>
+                <div class="card-desc">gemini-1.5-flash (2026-11-08, recorded outputs, 41/56 exploits executed)</div>
             </div>
             <div class="card">
-                <div class="card-label">Protected Behind Intent</div>
+                <div class="card-label">Protected ASR</div>
                 <div class="card-value text-green">0.0%</div>
-                <div class="card-desc">0/56 attacks bypassed gateway</div>
+                <div class="card-desc">0/56 attacks bypassed Intent firewall (100% neutralized)</div>
             </div>
             <div class="card">
-                <div class="card-label">Benign False Positive Rate</div>
+                <div class="card-label">False Positive Rate (FPR)</div>
                 <div class="card-value text-cyan">0.0%</div>
-                <div class="card-desc">16/16 legitimate purchases allowed</div>
+                <div class="card-desc">16/16 legitimate purchases allowed (0.0% FPR)</div>
             </div>
         </div>
 

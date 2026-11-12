@@ -107,34 +107,22 @@ Every transaction attempt, evaluation step, human approval decision, and PayPal 
 
 ## 5. Persistence, Storage & Concurrency Architecture
 
-### Persistent Disk Requirement
 The gateway writes signed mandates, atomic budget reservations, and the sequential audit chain to SQLite (`DATABASE_PATH`). 
-- **Production Deployment**: Mount a persistent block storage volume (e.g. `/var/data` configured in `render.yaml`).
-- **Configuration**: `DATABASE_PATH=/var/data/intent.db` (or `DATABASE_URL=sqlite:////var/data/intent.db`).
 
-### The Single-Worker Concurrency Invariant
-- **Invariant**: Intent utilizes in-memory mutexes paired with SQLite ACID transactions to prevent race conditions during budget headroom reservations and audit chain hashing.
-- **Requirement**: When running with SQLite, `WEB_CONCURRENCY` (or `WORKERS`) must be set to `1`.
-- **Horizontal Scaling**: For multi-worker or multi-container clusters, configure PostgreSQL via `DATABASE_URL=postgresql://user:pass@host:5432/dbname`.
+- **Persistent Disk Requirement**: Mount a persistent block storage volume (e.g. `/var/data` configured in `render.yaml`) to ensure audit ledger and reservation state persist across container reboots.
+- **Single-Worker Concurrency Invariant**: Intent coordinates async tasks via in-memory mutexes paired with SQLite `BEGIN IMMEDIATE` ACID transactions. When running SQLite, `WEB_CONCURRENCY=1` / `--workers 1` is strictly required. For horizontal multi-worker clusters, configure PostgreSQL via `DATABASE_URL`.
+
+*See [DEPLOYMENT.md](DEPLOYMENT.md) for full persistent volume configuration and deployment topologies.*
 
 ---
 
 ## 6. PayPal Webhook Setup & Audit Anchoring
 
-### Cryptographic Anchoring
-When Intent constructs a PayPal order:
-1. The SHA-256 `event_hash` of the `RESERVATION_CREATED` audit event is embedded into `purchase_units[0].custom_id` (fits within PayPal's 127-character limit).
-2. The `attempt_id` is embedded into `purchase_units[0].invoice_id`.
+- **Cryptographic Anchoring**: When constructing a PayPal order, the SHA-256 `event_hash` of the local headroom reservation is embedded into `purchase_units[0].custom_id`. The unique `attempt_id` is embedded into `invoice_id`.
+- **Webhook Handlers**: Captures commit reserved headroom (`COMMITTED`), refunds restore consumer headroom (`RELEASED`), and denials release held reservations.
+- **Cryptographic Verification**: Incoming dispatches are verified against PayPal's verification endpoint using the 5 transmission headers and `PAYPAL_WEBHOOK_ID`.
 
-This creates a bidirectional, immutable link between PayPal's ledger and Intent's local audit trail.
-
-### Webhook Event Handling
-- `PAYMENT.CAPTURE.COMPLETED`: Commits the in-memory budget reservation to `COMMITTED`.
-- `PAYMENT.CAPTURE.REFUNDED`: Transitions the reservation to `RELEASED`, immediately restoring consumer spending headroom.
-- `PAYMENT.CAPTURE.DENIED`: Releases reserved budget back to the pool.
-
-### Webhook Signature Verification Protocol
-All incoming webhook dispatches to `POST /api/paypal/webhook` are validated against PayPal's `POST /v1/notifications/verify-webhook-signature` endpoint using the 5 standard transmission headers (`PAYPAL-AUTH-ALGO`, `PAYPAL-CERT-URL`, `PAYPAL-TRANSMISSION-ID`, `PAYPAL-TRANSMISSION-SIG`, `PAYPAL-TRANSMISSION-TIME`) and `PAYPAL_WEBHOOK_ID`. Replays are prevented by deduplicating against the `processed_webhooks` table.
+*See [DEPLOYMENT.md](DEPLOYMENT.md#4-paypal-webhook-registration) for step-by-step PayPal Developer Dashboard webhook setup and event routing.*
 
 ---
 
@@ -152,3 +140,4 @@ All incoming webhook dispatches to `POST /api/paypal/webhook` are validated agai
 | `CHANNEL3_API_KEY` | Optional | Channel3 API key for querying live 100M+ product catalog. |
 
 Telemetry is accessible via `GET /api/health` without exposing secrets.
+

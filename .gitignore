@@ -70,8 +70,4 @@ Thumbs.db
 graphify-out/
 PROJECT_MASTER_STATUS_AND_PRD.md
 
-# Staged Screenshots & Recordings (Keeps directory empty until curated images are added)
-docs/screenshots/*
-!docs/screenshots/.gitkeep
-
-# Note: docs/images/ is intentionally NOT ignored for curated public documentation assets.
+# Note: docs/images/ is intentionally tracked for curated public documentation assets.

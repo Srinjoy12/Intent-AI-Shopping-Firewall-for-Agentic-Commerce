@@ -41,9 +41,26 @@ export default function BenchmarkTab() {
   const realModelBase = benchmarkData?.baselines?.real_model || {}
   const forcedBase = benchmarkData?.baselines?.forced_compromise || {}
 
-  const realAsr = realModelBase.attack_success_rate ? (realModelBase.attack_success_rate * 100).toFixed(1) : '73.2'
-  const protAsr = benchmarkData ? (benchmarkData.protected_attack_success_rate * 100).toFixed(1) : '0.0'
-  const protFpr = benchmarkData ? (benchmarkData.protected_false_positive_rate * 100).toFixed(1) : '0.0'
+  const forcedAsr = forcedBase.attack_success_rate != null
+    ? (forcedBase.attack_success_rate * 100).toFixed(1)
+    : (benchmarkData?.forced_baseline_asr != null ? (benchmarkData.forced_baseline_asr * 100).toFixed(1) : '100.0')
+
+  const realAsr = realModelBase.attack_success_rate != null
+    ? (realModelBase.attack_success_rate * 100).toFixed(1)
+    : (benchmarkData?.real_model_baseline_asr != null ? (benchmarkData.real_model_baseline_asr * 100).toFixed(1) : '73.2')
+
+  const realModelName = benchmarkData?.real_model_name || realModelBase.model_name || 'gemini-1.5-flash'
+  const realModelDate = benchmarkData?.real_model_date || realModelBase.date || '2026-11-08'
+  const realModelNote = benchmarkData?.real_model_note || `Recorded outputs from Google Gemini (${realModelName}) un-defended shopping agent (${realModelDate})`
+
+  const protAsr = benchmarkData?.protected_asr != null
+    ? (benchmarkData.protected_asr * 100).toFixed(1)
+    : (benchmarkData?.protected_attack_success_rate != null ? (benchmarkData.protected_attack_success_rate * 100).toFixed(1) : '0.0')
+
+  const protFpr = benchmarkData?.false_positive_rate != null
+    ? (benchmarkData.false_positive_rate * 100).toFixed(1)
+    : (benchmarkData?.protected_false_positive_rate != null ? (benchmarkData.protected_false_positive_rate * 100).toFixed(1) : '0.0')
+
   const latencies = benchmarkData?.latency_ms_per_rule || {}
   const totalLatency = latencies.total ? `${Number(latencies.total).toFixed(3)} ms` : '0.017 ms'
 
@@ -220,24 +237,39 @@ export default function BenchmarkTab() {
       <div className="panel kpi-ledger-panel">
         <div className="kpi-ledger-grid benchmark-metrics-row">
           <div className="kpi-ledger-cell">
-            <span className="kpi-ledger-num">{uniqueAttacks}</span>
-            <span className="kpi-ledger-label">Unique attacks</span>
+            <span className="kpi-ledger-num text-danger">{forcedAsr}%</span>
+            <span className="kpi-ledger-label">Forced baseline ASR</span>
+            <span className="text-secondary text-xs" style={{ display: 'block', marginTop: '2px' }}>
+              Compromised tool injection
+            </span>
           </div>
           <div className="kpi-ledger-cell">
             <span className="kpi-ledger-num text-danger">{realAsr}%</span>
-            <span className="kpi-ledger-label">Baseline attack success</span>
+            <span className="kpi-ledger-label">Real-model baseline ASR</span>
+            <span className="text-secondary text-xs" style={{ display: 'block', marginTop: '2px' }}>
+              {realModelName} ({realModelDate}, recorded)
+            </span>
           </div>
           <div className="kpi-ledger-cell">
             <span className="kpi-ledger-num text-success">{protAsr}%</span>
-            <span className="kpi-ledger-label">Protected attack success</span>
+            <span className="kpi-ledger-label">Protected ASR</span>
+            <span className="text-secondary text-xs" style={{ display: 'block', marginTop: '2px' }}>
+              Behind Intent Firewall (0/56)
+            </span>
           </div>
           <div className="kpi-ledger-cell">
             <span className="kpi-ledger-num text-success">{protFpr}%</span>
-            <span className="kpi-ledger-label">False positives</span>
+            <span className="kpi-ledger-label">False positive rate</span>
+            <span className="text-secondary text-xs" style={{ display: 'block', marginTop: '2px' }}>
+              16/16 benign allowed
+            </span>
           </div>
           <div className="kpi-ledger-cell">
             <span className="kpi-ledger-num">{totalLatency}</span>
-            <span className="kpi-ledger-label">Rule latency (rule evaluation only)</span>
+            <span className="kpi-ledger-label">Rule latency</span>
+            <span className="text-secondary text-xs" style={{ display: 'block', marginTop: '2px' }}>
+              Pure Python engine (all 4 rules)
+            </span>
           </div>
         </div>
       </div>

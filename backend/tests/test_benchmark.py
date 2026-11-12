@@ -241,6 +241,46 @@ def test_dual_baselines_with_model_metadata():
     assert real_model["successful_attacks"] > 0
 
 
+def test_four_core_metrics_integrity_and_anti_label_mixup():
+    """
+    Verify four distinct core metrics:
+    1. Forced baseline ASR == 100% (1.0) on the attack set (56/56 attacks succeed if unprotected).
+    2. Real-model baseline ASR == 73.2% (0.732) with gemini-1.5-flash and recorded outputs note.
+    3. Protected ASR == 0.0% (0.0) behind Intent Firewall (0/56 bypasses).
+    4. False positive rate == 0.0% (0.0) on benign controls (0/16 false alarms).
+    Anti-label mixup assertion: fails if forced baseline != 1.0 or if any baseline equals protected ASR.
+    """
+    import json
+    latest_path = PROJECT_ROOT / "benchmark" / "results" / "latest.json"
+    with open(latest_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    # 1. Check top-level or baselines fields
+    forced_asr = data.get("forced_baseline_asr", data.get("baselines", {}).get("forced_compromise", {}).get("attack_success_rate"))
+    real_asr = data.get("real_model_baseline_asr", data.get("baselines", {}).get("real_model", {}).get("attack_success_rate"))
+    prot_asr = data.get("protected_asr", data.get("protected_attack_success_rate"))
+    fpr = data.get("false_positive_rate", data.get("protected_false_positive_rate"))
+
+    # Assert exact values and boundary constraints
+    assert forced_asr == 1.0, f"Forced baseline ASR must be 1.0 (100%), got {forced_asr}"
+    assert real_asr == 0.732, f"Real model baseline ASR must be 0.732 (73.2%), got {real_asr}"
+    assert prot_asr == 0.0, f"Protected ASR must be 0.0 (0.0%), got {prot_asr}"
+    assert fpr == 0.0, f"False positive rate must be 0.0 (0.0%), got {fpr}"
+
+    # Anti-label-mixup guards: no baseline can equal the protected firewall ASR
+    assert forced_asr != prot_asr, "Label mix-up: forced baseline ASR cannot equal protected ASR (0.0)"
+    assert real_asr != prot_asr, "Label mix-up: real-model baseline ASR cannot equal protected ASR (0.0)"
+    assert forced_asr > real_asr > prot_asr, "Expected hierarchy: forced ASR (1.0) > real model ASR (0.732) > protected ASR (0.0)"
+
+    # Verify model metadata fields
+    real_model_meta = data.get("baselines", {}).get("real_model", {})
+    assert real_model_meta.get("model_name") == "gemini-1.5-flash"
+    assert real_model_meta.get("date") == "2026-11-08"
+    assert data.get("real_model_name") == "gemini-1.5-flash"
+    assert data.get("real_model_date") == "2026-11-08"
+    assert "recorded" in data.get("real_model_note", "").lower()
+
+
 def test_not_covered_section_honest_boundaries():
     """Verify at least 6 out-of-scope boundaries are documented as expected NOT_BLOCKED."""
     import json

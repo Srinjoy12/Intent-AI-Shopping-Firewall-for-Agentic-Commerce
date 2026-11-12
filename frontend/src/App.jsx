@@ -91,7 +91,7 @@ export default function App() {
 
   const currentProduct = products.find((p) => p.product_id === selectedProductId) || products[0]
 
-  // Sequential Staggered 4-Rule Animation (DESIGN.md signature moment)
+  // Sequential Staggered 4-Rule Animation (firewall signature visual)
   const runSequentialAnimation = async () => {
     // Step 1 checking
     setStepStates({ 1: 'checking', 2: 'pending', 3: 'pending', 4: 'pending' })

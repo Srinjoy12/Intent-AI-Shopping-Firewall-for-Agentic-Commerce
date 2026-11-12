@@ -523,7 +523,7 @@ For in-depth architectural and cryptographic documentation, see:
 - 📖 **[Endpoint Authentication & Mutation Matrix](docs/ENDPOINT_AUTH_MATRIX.md):** Complete catalog of all endpoints, authentication requirements, and state mutation properties.
 - 🛡️ **[Threat Model & Security Architecture](docs/THREAT_MODEL.md):** Formal adversary classes, trust boundaries, what Intent defends, and honest out-of-scope boundaries.
 - 🔌 **[MCP Server Specification](docs/MCP.md):** Integration guide for Model Context Protocol agent tool calls.
-- 🎨 **[Design System Contract](docs/DESIGN.md):** Enterprise fintech design tokens, typography, and anti-slop rules.
+- 🚀 **[Production Deployment Guide](docs/DEPLOYMENT.md):** Step-by-step production setup: environment variables, persistent disk, single-worker concurrency, and PayPal webhook registration.
 
 ### Multi-Tenant Demo Sandbox Architecture
 In public demo mode (`APP_MODE=demo`), external visitors and hackathon evaluators can interact with the firewall without administrative keys:
