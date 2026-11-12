@@ -37,7 +37,7 @@ async def _get_access_token() -> str:
         f"{settings.paypal_client_id}:{settings.paypal_client_secret}".encode()
     ).decode()
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.post(
             f"{settings.paypal_base_url}/v1/oauth2/token",
             headers={

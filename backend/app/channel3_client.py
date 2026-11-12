@@ -137,7 +137,7 @@ def search_products(query: str, limit: int = 5) -> list[dict]:
         return []
 
     try:
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=15.0) as client:
             resp = client.post(
                 f"{CHANNEL3_BASE_URL}/search",
                 headers={
@@ -180,7 +180,7 @@ def retrieve_product(product_id: str) -> dict | None:
         return None
 
     try:
-        with httpx.Client(timeout=30.0) as client:
+        with httpx.Client(timeout=15.0) as client:
             resp = client.get(
                 f"{CHANNEL3_BASE_URL}/products/{product_id}",
                 headers={"x-api-key": settings.channel3_api_key},

@@ -326,3 +326,115 @@ async def test_price_drift_above_tolerance_blocks_order():
         assert eval_res["status"] == "BLOCKED"
         violations = [v["rule"] for v in eval_res.get("violations", [])]
         assert "PRICE_DRIFT" in violations
+
+
+@pytest.mark.asyncio
+async def test_per_merchant_limit_blocks_and_preserves_headroom():
+    """
+    Phase 4 Resilience:
+    Mandate with per-merchant limit strictly halts consecutive orders to the same vendor
+    once per_merchant_limit is exceeded, returning structured remediation math.
+    """
+    import uuid
+    test_mandate_id = f"man_pm_{uuid.uuid4().hex[:8]}"
+
+    transport = ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        admin_headers = {"X-Admin-Key": "admin_super_secret_test_key"}
+        await client.post("/api/mandates", json={
+            "mandate_id": test_mandate_id,
+            "owner_id": "user_merchant_test",
+            "agent_id": "agent_demo_01",
+            "max_order_total": "1500.00",
+            "auto_approve_under": "1000.00",
+            "max_quantity": 1,
+            "required_attributes": {"ram": "16GB"},
+            "allowed_domains": ["staples.com", "bestbuy.com"],
+            "required_availability": "InStock",
+            "daily_limit": "5000.00",
+            "weekly_limit": "10000.00",
+            "per_merchant_limit": "1000.00",  # Only enough for 1 item ($899.99)
+            "max_orders_per_hour": 10,
+            "expires_in_hours": 24,
+        }, headers=admin_headers)
+
+        headers = {"X-Agent-Key": "demo_agent_secret_test_key", "Idempotency-Key": f"pm_key_1_{test_mandate_id}"}
+        r1 = await client.post("/api/verify-and-pay", json={
+            "mandate_id": test_mandate_id,
+            "product_id": "pPB4LGu",  # $899.99 at staples.com
+            "merchant_domain": "staples.com",
+            "quantity": 1,
+        }, headers=headers)
+        assert r1.status_code == 200
+        assert r1.json()["evaluation"]["status"] in ("CAPTURED", "VERIFIED_READY_FOR_PAYPAL")
+
+        # Second order to same merchant ($899.99) exceeds $1000 limit ($899.99 + $899.99 = $1799.98 > $1000)
+        headers2 = {"X-Agent-Key": "demo_agent_secret_test_key", "Idempotency-Key": f"pm_key_2_{test_mandate_id}"}
+        r2 = await client.post("/api/verify-and-pay", json={
+            "mandate_id": test_mandate_id,
+            "product_id": "pPB4LGu",
+            "merchant_domain": "staples.com",
+            "quantity": 1,
+        }, headers=headers2)
+        assert r2.status_code == 200
+        ev2 = r2.json()["evaluation"]
+        assert ev2["status"] == "BLOCKED"
+        assert any(v["rule"] == "MERCHANT_LIMIT_EXCEEDED" for v in ev2["violations"])
+        assert ev2["remediation"]["action"] == "SWITCH_PRODUCT"
+        assert "100.01" in str(ev2["remediation"]["remaining_headroom"])
+
+
+@pytest.mark.asyncio
+async def test_paypal_network_timeout_releases_reservation():
+    """
+    Phase 4 Resilience:
+    If the outbound PayPal call times out or throws an exception,
+    the active budget reservation is cleanly released in the audit ledger and headroom is freed.
+    """
+    import uuid
+    from unittest.mock import patch
+    test_mandate_id = f"man_to_{uuid.uuid4().hex[:8]}"
+
+    transport = ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        admin_headers = {"X-Admin-Key": "admin_super_secret_test_key"}
+        await client.post("/api/mandates", json={
+            "mandate_id": test_mandate_id,
+            "owner_id": "user_timeout",
+            "agent_id": "agent_demo_01",
+            "max_order_total": "1500.00",
+            "auto_approve_under": "1000.00",
+            "max_quantity": 1,
+            "required_attributes": {"ram": "16GB"},
+            "allowed_domains": ["staples.com"],
+            "required_availability": "InStock",
+            "daily_limit": "5000.00",  # Room for orders
+            "weekly_limit": "10000.00",
+            "per_merchant_limit": "5000.00",
+            "max_orders_per_hour": 10,
+            "expires_in_hours": 24,
+        }, headers=admin_headers)
+
+        # Simulate PayPal network timeout during settlement call
+        with patch("app.main.create_order_with_card", side_effect=httpx.TimeoutException("PayPal connection timed out")):
+            headers = {"X-Agent-Key": "demo_agent_secret_test_key", "Idempotency-Key": f"to_key_1_{test_mandate_id}"}
+            res = await client.post("/api/verify-and-pay", json={
+                "mandate_id": test_mandate_id,
+                "product_id": "pPB4LGu",
+                "merchant_domain": "staples.com",
+                "quantity": 1,
+            }, headers=headers)
+            assert res.status_code == 200
+            # Gateway catches PayPal timeout, marks notice, and releases reservation
+            assert "PayPal connection timed out" in res.json()["evaluation"]["pricing_note"]
+
+        # Because reservation was released upon timeout, headroom is freed so a second call can reserve
+        headers2 = {"X-Agent-Key": "demo_agent_secret_test_key", "Idempotency-Key": f"to_key_2_{test_mandate_id}"}
+        r2 = await client.post("/api/verify-and-pay", json={
+            "mandate_id": test_mandate_id,
+            "product_id": "pPB4LGu",
+            "merchant_domain": "staples.com",
+            "quantity": 1,
+        }, headers=headers2)
+        assert r2.status_code == 200
+        assert r2.json()["evaluation"]["status"] in ("CAPTURED", "VERIFIED_READY_FOR_PAYPAL")

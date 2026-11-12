@@ -312,9 +312,11 @@ def test_same_origin_security_headers_and_public_base_url():
 
         get_settings.cache_clear()
         try:
+            import uuid
+            test_man_id = f"man_hv_{uuid.uuid4().hex[:8]}"
             # Create a dedicated high-limit mandate to avoid daily budget exhaustion from prior tests
             test_man = sign_mandate({
-                "mandate_id": "man_high_val_test",
+                "mandate_id": test_man_id,
                 "owner_id": "user_high_val",
                 "agent_id": "agent_demo_01",
                 "max_order_total": "2000.00",
@@ -336,7 +338,7 @@ def test_same_origin_security_headers_and_public_base_url():
             high_val_res = client.post(
                 "/api/verify-and-pay",
                 json={
-                    "mandate_id": "man_high_val_test",
+                    "mandate_id": test_man_id,
                     "product_id": "KXUKS23",  # $1,099.99 > $1,000 threshold
                     "merchant_domain": "newegg.com",
                     "quantity": 1,
