@@ -944,9 +944,10 @@ async def update_demo_session_activity(
 
 
 async def delete_demo_session(session_id: str) -> None:
-    """Delete a demo session."""
+    """Delete a demo session and release its budget reservations."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DELETE FROM demo_sessions WHERE session_id = ?", (session_id,))
+        await db.execute("DELETE FROM budget_reservations WHERE session_id = ?", (session_id,))
         await db.commit()
 
 

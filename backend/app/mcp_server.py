@@ -20,6 +20,7 @@ import asyncio
 import json
 import logging
 import os
+import sys
 from typing import Any, Optional
 import httpx
 
@@ -112,8 +113,8 @@ async def mcp_submit_order_intent(
             "computed_subtotal": eval_data.get("computed_subtotal"),
             "violations": [v.get("rule") for v in eval_data.get("violations", [])],
             "remediation": eval_data.get("remediation"),
-            "paypal_capture_id": res.get("paypal_capture_id"),
-            "paypal_order_id": res.get("paypal_order_id"),
+            "paypal_capture_id": eval_data.get("paypal_capture_id") or res.get("paypal_capture_id"),
+            "paypal_order_id": eval_data.get("paypal_order_id") or res.get("paypal_order_id"),
             "message": "Order verified and processed" if eval_data.get("status") != "BLOCKED" else "Order blocked by firewall",
         }
     return res
@@ -171,5 +172,5 @@ def list_mcp_tool_names() -> list[str]:
 
 
 if __name__ == "__main__":
-    print(f"Starting Intent MCP Server on stdio (connecting to Gateway at {GATEWAY_URL})...")
+    print(f"Starting Intent MCP Server on stdio (connecting to Gateway at {GATEWAY_URL})...", file=sys.stderr)
     mcp_server.run()

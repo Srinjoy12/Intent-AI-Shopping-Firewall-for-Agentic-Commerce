@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Copy, Check, X, AlertTriangle, AlertCircle } from 'lucide-react'
 
-export default function Header({ policy, mandate, onNewMandateCreated, onRefresh, appMode = 'demo' }) {
+export default function Header({ policy, mandate, onNewMandateCreated, onRefresh, appMode = 'demo', onResetSandbox }) {
   const [showIssueModal, setShowIssueModal] = useState(false)
   const [showKillSwitchModal, setShowKillSwitchModal] = useState(false)
   const [showMandatePopover, setShowMandatePopover] = useState(false)
@@ -226,9 +226,30 @@ export default function Header({ policy, mandate, onNewMandateCreated, onRefresh
           {/* Right Controls: [Sandbox] -> Compact Mandate -> [Issue mandate] -> [Kill switch] */}
           <div className="header-actions">
             {/* 1. Sandbox Label (rectangular tag, info style) */}
-            <span className="status-tag status-tag-info" data-testid="sandbox-tag">
-              Sandbox
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span className="status-tag status-tag-info" data-testid="sandbox-tag">
+                Sandbox
+              </span>
+              {appMode === 'demo' && onResetSandbox && (
+                <button
+                  type="button"
+                  onClick={onResetSandbox}
+                  title="Reset demo sandbox session and restore fresh quota"
+                  style={{
+                    background: 'none',
+                    border: '1px solid #CBD3DF',
+                    borderRadius: '4px',
+                    padding: '2px 8px',
+                    fontSize: '11px',
+                    fontWeight: 500,
+                    color: '#55627A',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
 
             {/* 2. Compact Mandate Status Button with Dot + Relative Expiry */}
             <div className="mandate-popover-wrapper">

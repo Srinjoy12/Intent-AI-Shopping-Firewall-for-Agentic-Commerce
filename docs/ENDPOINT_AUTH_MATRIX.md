@@ -58,6 +58,8 @@ Enforcement values and policies are strictly bound to cryptographically signed m
 | **POST** | `/api/demo/refund/{capture_id}` | Session | **Yes** | Refunds PayPal capture belonging strictly to caller's session (cross-session rejected with 403). |
 | **GET** | `/api/demo/attempts` | Session | No | Returns past verification attempts strictly for caller's session. |
 | **GET** | `/api/demo/analytics` | Session | No | Computes aggregate analytics strictly for caller's session. |
+| **POST** | `/api/demo/reset` | Session | **Yes** | Resets visitor sandbox session and issues fresh session cookie. |
+
 
 ---
 

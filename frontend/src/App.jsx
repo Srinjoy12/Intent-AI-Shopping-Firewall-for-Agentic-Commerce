@@ -34,11 +34,26 @@ export default function App() {
   const [analytics, setAnalytics] = useState(null)
   const [attempts, setAttempts] = useState([])
   const [rateLimitStatus, setRateLimitStatus] = useState(null)
+  const [rateLimitError, setRateLimitError] = useState(null)
 
   // Initial Data Fetch
   useEffect(() => {
     fetchInitialData()
   }, [])
+
+  const handleResetSandbox = async () => {
+    try {
+      const res = await fetch('/api/demo/reset', { method: 'POST' })
+      if (res.ok) {
+        setRateLimitError(null)
+        setAgentRequest(null)
+        setEvaluation(null)
+        await fetchInitialData()
+      }
+    } catch (err) {
+      console.error('Failed to reset demo sandbox:', err)
+    }
+  }
 
   const fetchInitialData = async () => {
     try {
@@ -50,6 +65,13 @@ export default function App() {
           const sessData = await sessRes.json()
           currentMode = sessData.app_mode || 'demo'
           setAppMode(currentMode)
+          setRateLimitError(null)
+        } else if (sessRes.status === 410) {
+          // Sandbox expired: auto-reset
+          await handleResetSandbox()
+          return
+        } else if (sessRes.status === 429) {
+          setRateLimitError('Demo rate limit reached (30 transactions/hr). Click "Reset Sandbox" to start a fresh testing session.')
         }
       } catch (err) {
         console.warn('Demo session bootstrap note:', err)
@@ -57,7 +79,7 @@ export default function App() {
 
       // 2. Fetch resources based on mode
       const isDemo = currentMode === 'demo'
-      const [hRes, polRes, preRes, prodRes, rateRes, anaRes, attRes, manRes] = await Promise.all([
+      const [hRes, polRes, preRes, prodRes, rateRes, anaRes, attRes] = await Promise.all([
         fetch('/api/health').then((r) => r.json()).catch(() => null),
         fetch(isDemo ? '/api/demo/mandate' : '/api/policy').then((r) => r.json()).catch(() => null),
         fetch('/api/presets').then((r) => r.json()).catch(() => []),
@@ -65,16 +87,17 @@ export default function App() {
         fetch('/api/rate-limit-status').then((r) => r.json()).catch(() => null),
         fetch(isDemo ? '/api/demo/analytics' : '/api/analytics').then((r) => r.json()).catch(() => null),
         fetch(isDemo ? '/api/demo/attempts' : '/api/attempts').then((r) => r.json()).catch(() => []),
-        fetch(isDemo ? '/api/demo/mandate' : '/api/mandates/demo_mandate_01').then((r) => r.json()).catch(() => null),
       ])
 
       if (hRes) {
         setHealth(hRes)
         if (hRes.app_mode) setAppMode(hRes.app_mode)
       }
-      if (polRes) setPolicy(polRes)
-      if (manRes && (manRes.mandate || manRes.mandate_id)) {
-        setMandate(manRes.mandate || manRes)
+      if (polRes) {
+        setPolicy(polRes)
+        if (polRes.mandate || polRes.mandate_id) {
+          setMandate(polRes.mandate || polRes)
+        }
       }
       if (preRes) setPresets(preRes)
       if (prodRes && prodRes.length > 0) {
@@ -138,6 +161,18 @@ export default function App() {
       const res = await fetch(endpoint, {
         method: 'POST',
       })
+
+      if (!res.ok) {
+        if (res.status === 429) {
+          setRateLimitError('Per-session demo rate limit reached (30 transactions/hr). Click "Reset Sandbox" to start a fresh testing session.')
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          console.error('Preset execution failed:', res.status, errData)
+        }
+        return
+      }
+      setRateLimitError(null)
+
       const data = await res.json()
 
       setAgentRequest(data.agent_request)
@@ -179,6 +214,17 @@ export default function App() {
           quantity: quantity,
         }),
       })
+
+      if (!res.ok) {
+        if (res.status === 429) {
+          setRateLimitError('Per-session demo rate limit reached (30 transactions/hr). Click "Reset Sandbox" to start a fresh testing session.')
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          console.error('Custom agent execution failed:', res.status, errData)
+        }
+        return
+      }
+      setRateLimitError(null)
 
       const data = await res.json()
       setAgentRequest(data.agent_request)
@@ -223,6 +269,17 @@ export default function App() {
         }),
       })
 
+      if (!res.ok) {
+        if (res.status === 429) {
+          setRateLimitError('Per-session demo rate limit reached (30 transactions/hr). Click "Reset Sandbox" to start a fresh testing session.')
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          console.error('Compliant order execution failed:', res.status, errData)
+        }
+        return
+      }
+      setRateLimitError(null)
+
       const data = await res.json()
       setAgentRequest(data.agent_request)
       setEvaluation(data.evaluation)
@@ -265,6 +322,17 @@ export default function App() {
           merchant_domain: 'bestbuy.com',
         }),
       })
+
+      if (!res.ok) {
+        if (res.status === 429) {
+          setRateLimitError('Per-session demo rate limit reached (30 transactions/hr). Click "Reset Sandbox" to start a fresh testing session.')
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          console.error('Self-healing failed:', res.status, errData)
+        }
+        return
+      }
+      setRateLimitError(null)
 
       const data = await res.json()
 
@@ -316,10 +384,18 @@ export default function App() {
         }),
       })
 
-      const data = await res.json()
       if (!res.ok) {
-        throw new Error(data.detail || 'High-value order failed')
+        if (res.status === 429) {
+          setRateLimitError('Per-session demo rate limit reached (30 transactions/hr). Click "Reset Sandbox" to start a fresh testing session.')
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          console.error('High-value order failed:', res.status, errData)
+        }
+        return
       }
+      setRateLimitError(null)
+
+      const data = await res.json()
 
       setAgentRequest(data.agent_request)
       setEvaluation(data.evaluation)
@@ -413,14 +489,14 @@ export default function App() {
     try {
       const isDemo = appMode === 'demo'
       const [ana, att, rate, man] = await Promise.all([
-        fetch(isDemo ? '/api/demo/analytics' : '/api/analytics').then((r) => r.json()),
-        fetch(isDemo ? '/api/demo/attempts' : '/api/attempts').then((r) => r.json()),
-        fetch('/api/rate-limit-status').then((r) => r.json()),
-        fetch(isDemo ? '/api/demo/mandate' : '/api/mandates/demo_mandate_01').then((r) => r.json()).catch(() => null),
+        fetch(isDemo ? '/api/demo/analytics' : '/api/analytics').then((r) => r.ok ? r.json() : null),
+        fetch(isDemo ? '/api/demo/attempts' : '/api/attempts').then((r) => r.ok ? r.json() : []),
+        fetch('/api/rate-limit-status').then((r) => r.ok ? r.json() : null),
+        fetch(isDemo ? '/api/demo/mandate' : '/api/mandates/demo_mandate_01').then((r) => r.ok ? r.json() : null).catch(() => null),
       ])
-      setAnalytics(ana)
-      setAttempts(att)
-      setRateLimitStatus(rate)
+      if (ana) setAnalytics(ana)
+      if (att) setAttempts(att)
+      if (rate) setRateLimitStatus(rate)
       if (man) {
         setMandate(man.mandate || man)
       }
@@ -439,11 +515,48 @@ export default function App() {
         health={health}
         appMode={appMode}
         onRefresh={refreshLogs}
+        onResetSandbox={handleResetSandbox}
         onNewMandateCreated={(newM) => {
           setMandate(newM)
           refreshLogs()
         }}
       />
+
+      {rateLimitError && (
+        <div
+          role="alert"
+          style={{
+            margin: '12px 24px 0',
+            padding: '10px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderRadius: '6px',
+            background: '#FFF4E0',
+            border: '1px solid #FFE2A8',
+            color: '#9A5B00',
+            fontSize: '13px',
+          }}
+        >
+          <span><strong>Demo Rate Limit:</strong> {rateLimitError}</span>
+          <button
+            type="button"
+            onClick={handleResetSandbox}
+            style={{
+              padding: '4px 12px',
+              background: '#0070E0',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: 500,
+            }}
+          >
+            Reset Sandbox
+          </button>
+        </div>
+      )}
 
       {/* 2. Underline Navigation Tabs */}
       <nav className="tab-navigation-bar" aria-label="Main application tabs">

@@ -82,9 +82,9 @@ def create_session_mandate(session_id: str, agent_id: str, mandate_id: str, expi
             "newegg.com",
         ],
         "required_availability": "InStock",
-        "daily_limit": "2500.00",
-        "weekly_limit": "7500.00",
-        "per_merchant_limit": "1500.00",
+        "daily_limit": "10000.00",
+        "weekly_limit": "25000.00",
+        "per_merchant_limit": "5000.00",
         "max_orders_per_hour": 10,
         "issued_at": now.isoformat(),
         "expires_at": expires_at_iso,
@@ -193,14 +193,33 @@ async def get_or_create_demo_session(request: Request, response: Response) -> di
             if now >= expires_at:
                 logger.warning("Sandbox session %s is expired; deleting and rejecting", session_id)
                 await delete_demo_session(session_id)
+                response.delete_cookie(COOKIE_NAME, path="/")
                 raise HTTPException(
                     status_code=status.HTTP_410_GONE,
                     detail="SANDBOX_EXPIRED: Demo sandbox session has expired. Reload page for a fresh sandbox.",
                 )
 
+            # Auto-healing mandate signature across server restarts
+            mandate_id = session_data.get("mandate_id")
+            if mandate_id:
+                try:
+                    from app.db import get_mandate_by_id, save_mandate
+                    from app.mandate import verify_mandate, get_public_key, sign_mandate, get_signing_key
+                    mandate = await get_mandate_by_id(mandate_id)
+                    if mandate:
+                        is_valid, _ = verify_mandate(mandate, get_public_key())
+                        if not is_valid:
+                            logger.info("Session %s mandate signature invalid across restart; auto-re-signing", session_id)
+                            m_dict = mandate.model_dump()
+                            re_signed = sign_mandate(m_dict, get_signing_key())
+                            await save_mandate(re_signed, session_id=session_id)
+                except Exception as ex:
+                    logger.warning("Could not auto-heal mandate for session %s: %s", session_id, ex)
+
             return session_data
         else:
             # Cookie was signed but session not in DB (possibly already cleaned up or expired)
+            response.delete_cookie(COOKIE_NAME, path="/")
             raise HTTPException(
                 status_code=status.HTTP_410_GONE,
                 detail="SANDBOX_EXPIRED: Demo sandbox session has expired. Reload page for a fresh sandbox.",
@@ -213,7 +232,7 @@ async def get_or_create_demo_session(request: Request, response: Response) -> di
     return new_session
 
 
-async def enforce_session_rate_limit(session_data: dict[str, Any]) -> None:
+async def enforce_session_rate_limit(session_data: dict[str, Any], increment: bool = True) -> None:
     """
     Enforce per-session rate limit (default: 30 requests per hour).
     Different sessions have distinct rate limit windows and counters.
@@ -233,7 +252,7 @@ async def enforce_session_rate_limit(session_data: dict[str, Any]) -> None:
 
     # Reset hourly window if elapsed
     if (now - window_start).total_seconds() >= 3600:
-        new_count = 1
+        new_count = 1 if increment else 0
         new_window_start = now.isoformat()
     else:
         if current_count >= settings.session_rate_limit_per_hour:
@@ -247,16 +266,23 @@ async def enforce_session_rate_limit(session_data: dict[str, Any]) -> None:
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=f"Per-session rate limit exceeded (maximum {settings.session_rate_limit_per_hour} requests per hour).",
             )
-        new_count = current_count + 1
+        new_count = current_count + 1 if increment else current_count
         new_window_start = window_start.isoformat()
 
-    await update_demo_session_activity(session_id, new_count, new_window_start)
+    if increment:
+        await update_demo_session_activity(session_id, new_count, new_window_start)
     session_data["request_count"] = new_count
     session_data["window_start"] = new_window_start
 
 
 async def require_demo_session(request: Request, response: Response) -> dict[str, Any]:
-    """FastAPI dependency for all /api/demo/* routes."""
+    """FastAPI dependency for /api/demo/* transaction and state-mutating routes (enforces & increments rate limit)."""
     session_data = await get_or_create_demo_session(request, response)
-    await enforce_session_rate_limit(session_data)
+    await enforce_session_rate_limit(session_data, increment=True)
+    return session_data
+
+
+async def require_demo_session_read_only(request: Request, response: Response) -> dict[str, Any]:
+    """FastAPI dependency for /api/demo/* read-only telemetry and contract retrieval (does not consume transaction quota)."""
+    session_data = await get_or_create_demo_session(request, response)
     return session_data

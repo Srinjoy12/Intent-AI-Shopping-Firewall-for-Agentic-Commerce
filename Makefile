@@ -1,6 +1,6 @@
 # Intent AI Shopping Firewall — Makefile
 
-.PHONY: cleanroom benchmark benchmark-gemini benchmark-openai test verify-export tamper-demo scan-secrets verify-e2e help
+.PHONY: cleanroom benchmark benchmark-gemini benchmark-openai test verify-export tamper-demo scan-secrets verify-e2e mcp-demo help
 
 PYTHON ?= backend/venv/bin/python3
 PYTEST ?= backend/venv/bin/pytest
@@ -16,6 +16,7 @@ help:
 	@echo "  make verify-e2e         Run scripted multi-tenant sandbox isolation verification"
 	@echo "  make verify-export      Export and verify the cryptographic audit chain offline"
 	@echo "  make tamper-demo        Demonstrate tamper detection by altering an audit event"
+	@echo "  make mcp-demo           Run autonomous MCP agent tool-call demonstration over stdio"
 
 cleanroom:
 	bash scripts/verify_cleanroom.sh
@@ -43,4 +44,7 @@ verify-export:
 
 tamper-demo:
 	$(PYTHON) scripts/tamper_demo.py
+
+mcp-demo:
+	$(PYTHON) scripts/demo_mcp_agent.py
 
