@@ -119,10 +119,10 @@ class LLMAdapter:
     ) -> OrderIntentRequest:
         prompt = self._build_prompt(search_results, search_goal, injected_description, prior_remediation)
         models_to_try = [
-            os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
+            os.getenv("GEMINI_MODEL", "gemini-3.5-flash"),
+            "gemini-3.5-flash",
             "gemini-3.5-flash-lite",
             "gemini-flash-latest",
-            "gemini-1.5-flash",
         ]
 
         payload = {
