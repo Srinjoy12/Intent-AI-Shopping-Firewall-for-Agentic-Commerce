@@ -26,8 +26,11 @@ export default function ProductCard({
 
   return (
     <div className="panel product-panel">
-      <div className="panel-header">
+      <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="panel-title">Product</h2>
+        <span className="status-tag status-tag-info" data-testid="catalog-source-tag">
+          {currentProduct?.source === 'channel3' ? 'Live Channel3 Catalog' : 'Catalog Fixtures (Deterministic)'}
+        </span>
       </div>
 
       {/* Selectable Vertical Radio List of Catalog Products */}

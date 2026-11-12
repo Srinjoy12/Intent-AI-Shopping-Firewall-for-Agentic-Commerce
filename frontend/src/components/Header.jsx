@@ -99,6 +99,7 @@ export default function Header({ policy, mandate, onNewMandateCreated, onRefresh
 
   const policyHash = mandate?.policy_hash || '2cbb8cc57c599e15831e389d759e22c329803da1ae772c87603f7cd8d2807d8c'
   const isRevoked = mandate?.status === 'REVOKED'
+  const isExpired = mandate?.expires_at ? (new Date(mandate.expires_at).getTime() - Date.now() <= 0) : false
 
   const handleCopyHash = () => {
     if (navigator.clipboard) {
@@ -239,11 +240,11 @@ export default function Header({ policy, mandate, onNewMandateCreated, onRefresh
                 aria-label="View mandate security contract"
               >
                 <span
-                  className={`status-dot ${isRevoked ? 'dot-danger' : isAgentPaused ? 'dot-danger' : 'dot-success'}`}
+                  className={`status-dot ${isRevoked ? 'dot-danger' : isAgentPaused ? 'dot-danger' : isExpired ? 'dot-danger' : 'dot-success'}`}
                   aria-hidden="true"
                 />
                 <span className="mandate-status-label">
-                  {isRevoked ? 'Mandate revoked' : isAgentPaused ? 'Agent paused' : 'Mandate active'}
+                  {isRevoked ? 'Mandate revoked' : isAgentPaused ? 'Agent paused' : isExpired ? 'Mandate expired' : 'Mandate active'}
                 </span>
                 <span className="mandate-status-expiry">
                   &bull; {getRemainingTimeDisplay()}
@@ -277,6 +278,12 @@ export default function Header({ policy, mandate, onNewMandateCreated, onRefresh
                     <div className="kv-row">
                       <span className="kv-key">Signature</span>
                       <span className="status-tag status-tag-success">Ed25519 verified</span>
+                    </div>
+                    <div className="kv-row">
+                      <span className="kv-key">Status / Expiry</span>
+                      <span className={`status-tag ${isExpired ? 'status-tag-danger' : isRevoked ? 'status-tag-danger' : 'status-tag-success'}`}>
+                        {isExpired ? 'Expired' : isRevoked ? 'Revoked' : getRemainingTimeDisplay()}
+                      </span>
                     </div>
                     <div className="kv-row">
                       <span className="kv-key">Policy hash</span>

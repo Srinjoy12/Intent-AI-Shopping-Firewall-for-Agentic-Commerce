@@ -336,3 +336,44 @@ def test_expired_sandbox_is_rejected_and_cleaned_up():
     cleaned_count = asyncio.run(cleanup_expired_demo_sessions())
     assert cleaned_count >= 1, f"Expected at least 1 session swept, got {cleaned_count}"
     assert asyncio.run(get_demo_session(lingering_id)) is None
+
+
+def test_demo_mandate_expiry_and_session_scoped_ledger():
+    """
+    Phase 3 Demo Correctness Verification:
+    1. An expired mandate in a demo session rejects order attempts with HTTP 400 MANDATE_EXPIRED.
+    2. Session-scoped ledger queries strictly isolate attempts per session_id.
+    """
+    from app.db import get_mandate_by_id, save_mandate
+
+    client = TestClient(app)
+    sess_res = client.get("/api/demo/session")
+    assert sess_res.status_code == 200
+    sess_data = sess_res.json()
+    mandate_id = sess_data["mandate_id"]
+    session_id = sess_data["session_id"]
+
+    # 1. Fetch mandate and artificially set expires_at into the past
+    mandate = asyncio.run(get_mandate_by_id(mandate_id))
+    assert mandate is not None
+    past_iso = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+    mandate.expires_at = past_iso
+    asyncio.run(save_mandate(mandate, session_id=session_id))
+
+    # 2. Attempt verify-and-pay with the expired mandate
+    blocked_pay = client.post(
+        "/api/demo/verify-and-pay",
+        json={
+            "product_id": "pPB4LGu",
+            "merchant_domain": "staples.com",
+            "quantity": 1,
+            "agent_reasoning": "Attempt with expired mandate",
+        },
+    )
+    assert blocked_pay.status_code == 400, f"Expected 400 for expired mandate, got {blocked_pay.status_code}: {blocked_pay.text}"
+    assert "MANDATE_EXPIRED" in blocked_pay.text
+
+    # 3. Verify session-scoped ledger returns only caller session records
+    attempts = client.get("/api/demo/attempts").json()
+    for att in attempts:
+        assert att.get("session_id") == session_id, f"Cross-session leak: attempt {att} not owned by {session_id}"

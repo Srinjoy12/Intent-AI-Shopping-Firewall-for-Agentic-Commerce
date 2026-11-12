@@ -118,8 +118,11 @@ export default function PayPalPanel({
 
   return (
     <div className="panel settlement-panel paypal-box">
-      <div className="panel-header">
+      <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 className="panel-title">Settlement</h2>
+        <span className="status-tag status-tag-info" data-testid="settlement-mode-tag">
+          PayPal Sandbox
+        </span>
       </div>
 
       <div className="settlement-body">
