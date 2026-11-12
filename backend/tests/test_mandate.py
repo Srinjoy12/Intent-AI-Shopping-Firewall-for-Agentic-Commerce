@@ -386,3 +386,24 @@ def test_route_security_regression_guard_all_mutating_endpoints_require_auth():
             f"Dependencies found: {dep_names}"
         )
 
+
+def test_endpoint_matrix_matches_code():
+    """
+    Phase 5 Verification:
+    Verify that docs/ENDPOINT_AUTH_MATRIX.md strictly documents every single API route
+    exposed by the FastAPI application (generated / validated from code).
+    """
+    from pathlib import Path
+    matrix_path = Path(__file__).resolve().parent.parent.parent / "docs" / "ENDPOINT_AUTH_MATRIX.md"
+    assert matrix_path.exists(), "Missing docs/ENDPOINT_AUTH_MATRIX.md"
+
+    doc_text = matrix_path.read_text(encoding="utf-8")
+    api_routes = [
+        r.path for r in app.routes
+        if hasattr(r, "path") and r.path.startswith("/api/")
+    ]
+    assert len(api_routes) >= 40, f"Expected at least 40 API routes, found {len(api_routes)}"
+
+    missing_from_matrix = [path for path in api_routes if path not in doc_text]
+    assert not missing_from_matrix, f"Routes missing from docs/ENDPOINT_AUTH_MATRIX.md: {missing_from_matrix}"
+
