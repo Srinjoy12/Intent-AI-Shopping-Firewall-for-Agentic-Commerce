@@ -344,59 +344,14 @@ Intent extends native compatibility to autonomous AI agents through the **offici
 
 ## Automated Pytest Suite
 
-Intent includes 44 automated unit, integration, and security adversarial tests covering all 4 rules, rate limiter circuit breakers, signed mandate cryptography, RBAC, atomic concurrency, idempotency, price drift, hash-chained audit tamper-evidence, MCP protocol isolation, and human approval channel security:
+Intent includes 87 automated unit, integration, and security adversarial tests covering all 4 rules, rate limiter circuit breakers, signed mandate cryptography, RBAC, atomic concurrency, idempotency, price drift, hash-chained audit tamper-evidence, MCP protocol isolation, human approval channel security, outbound network timeouts, global error handling, and production persistence:
 
 ```bash
-PYTHONPATH=backend backend/venv/bin/pytest backend/tests/ -v
+PYTHONPATH=backend:. backend/venv/bin/pytest backend/tests/ -v
 ```
 
 ```
-backend/tests/test_audit_chain.py::test_valid_audit_chain_verifies PASSED
-backend/tests/test_audit_chain.py::test_tampered_field_detected PASSED
-backend/tests/test_audit_chain.py::test_deleted_event_detected PASSED
-backend/tests/test_audit_chain.py::test_reordered_events_detected PASSED
-backend/tests/test_audit_chain.py::test_50_concurrent_appends_keep_chain_valid PASSED
-backend/tests/test_audit_chain.py::test_offline_export_verification PASSED
-backend/tests/test_benchmark.py::test_benchmark_loader_validates_yaml_schema PASSED
-backend/tests/test_benchmark.py::test_offline_mode_is_deterministic PASSED
-backend/tests/test_benchmark.py::test_metrics_math_correct_on_fixture PASSED
-backend/tests/test_benchmark.py::test_endpoint_get_benchmark_latest PASSED
-backend/tests/test_gateway.py::test_rule_1_merchant_domain_not_found PASSED
-backend/tests/test_gateway.py::test_rule_1_merchant_out_of_stock PASSED
-backend/tests/test_gateway.py::test_rule_2_attribute_mismatch_blocks PASSED
-backend/tests/test_gateway.py::test_rule_2_unverifiable_attribute_fails_closed PASSED
-backend/tests/test_gateway.py::test_rule_2_attribute_normalization_succeeds PASSED
-backend/tests/test_gateway.py::test_rule_3_max_quantity_exceeded PASSED
-backend/tests/test_gateway.py::test_rule_3_budget_exceeded_single_item PASSED
-backend/tests/test_gateway.py::test_rule_4_verified_ready_for_paypal PASSED
-backend/tests/test_gateway.py::test_rate_limiter_circuit_breaker PASSED
-backend/tests/test_gateway.py::test_endpoint_health PASSED
-backend/tests/test_gateway.py::test_endpoint_get_policy PASSED
-backend/tests/test_gateway.py::test_endpoint_get_presets PASSED
-backend/tests/test_gateway.py::test_endpoint_get_fixtures PASSED
-backend/tests/test_gateway.py::test_endpoint_verify_and_pay_blocked_flow PASSED
-backend/tests/test_mandate.py::test_tampering_field_after_signing_rejected PASSED
-backend/tests/test_mandate.py::test_expired_mandate_rejected PASSED
-backend/tests/test_mandate.py::test_revoked_mandate_rejected PASSED
-backend/tests/test_mandate.py::test_agent_key_cannot_use_another_agent_mandate PASSED
-backend/tests/test_mandate.py::test_agent_key_cannot_create_revoke_modify_mandate PASSED
-backend/tests/test_mandate.py::test_mandate_signed_with_different_key_rejected PASSED
-backend/tests/test_mandate.py::test_old_unauthenticated_policy_update_fails PASSED
-backend/tests/test_mandate.py::test_public_key_endpoint PASSED
-backend/tests/test_mcp_and_approvals.py::test_token_reuse_is_rejected PASSED
-backend/tests/test_mcp_and_approvals.py::test_expired_token_is_rejected PASSED
-backend/tests/test_mcp_and_approvals.py::test_approval_reruns_rules_and_blocks_if_price_drifted PASSED
-backend/tests/test_mcp_and_approvals.py::test_paused_agent_is_blocked PASSED
-backend/tests/test_mcp_and_approvals.py::test_mcp_tools_cannot_reach_admin_operations PASSED
-backend/tests/test_mcp_and_approvals.py::test_mcp_block_response_contains_remediation_json PASSED
-backend/tests/test_reservation_and_idempotency.py::test_concurrent_requests_daily_limit PASSED
-backend/tests/test_reservation_and_idempotency.py::test_sequential_orders_exceeding_daily_limit PASSED
-backend/tests/test_reservation_and_idempotency.py::test_idempotency_key_replay_returns_cached_response PASSED
-backend/tests/test_reservation_and_idempotency.py::test_idempotency_key_changed_quantity_returns_409 PASSED
-backend/tests/test_reservation_and_idempotency.py::test_paypal_failure_releases_reservation_and_refund_restores_headroom PASSED
-backend/tests/test_reservation_and_idempotency.py::test_price_drift_above_tolerance_blocks_order PASSED
-
-======================== 44 passed in 3.60s =========================
+============================= 87 passed in 18.08s ==============================
 ```
 
 ---
@@ -447,12 +402,14 @@ make benchmark-openai
 
 ### Empirical Results Summary
 
-| Metric | Unprotected Agent (Baseline) | Behind Intent Firewall | Security Impact |
-| :--- | :---: | :---: | :---: |
-| **Attack Success Rate (ASR)** | **100.0%** | **0.0%** | 🟢 **-100.0% Exploit Elimination** |
-| **False Positive Rate (FPR)** | 0.0% | 0.0% | 🟢 Zero legitimate purchases blocked |
-| **Total Attacks Neutralized** | 0 / 168 | **168 / 168** | 🛡️ **100% Defense Against Injections** |
-| **Median Firewall Latency** | N/A | **0.018 ms** | ⚡ Sub-millisecond pure-code execution |
+| Metric | Forced Baseline | Real-Model Baseline (`gemini-1.5-flash`)* | Behind Intent Firewall | Security Impact |
+| :--- | :---: | :---: | :---: | :---: |
+| **Attack Success Rate (ASR)** | **100.0%** (56/56) | **73.2%** (41/56) | **0.0%** (0/56) | 🟢 **-100.0% Exploit Elimination** |
+| **False Positive Rate (FPR)** | 0.0% (0/16) | 0.0% (0/16) | 0.0% (0/16) | 🟢 Zero legitimate purchases blocked |
+| **Total Attacks Neutralized** | 0 / 168 | 45 / 168 | **168 / 168** | 🛡️ **100% Defense Against Injections** |
+| **Median Firewall Latency** | N/A | N/A | **0.018 ms** | ⚡ Sub-millisecond pure-code execution |
+
+*\* Note: Real-model baseline evaluated against recorded LLM outputs (`gemini-1.5-flash`, recorded 2026-11-08) without firewall intervention.*
 
 ### Generated Reports & Endpoints
 - **JSON Manifest:** `benchmark/results/latest.json`
@@ -484,22 +441,26 @@ Intent features a calm, dense, precise enterprise fintech security console built
 Intent is built with rigorous automated verification covering cryptographic integrity, route authorization, prompt injection defense, multi-tenant isolation, and bundle security:
 
 ```bash
-# 1. Run complete 81-test automated pytest verification suite
+# 1. Run complete 6-gate clean-room release verification pipeline
+make cleanroom
+
+# Or run individual verification gates:
+# - Run complete 87-test automated pytest verification suite
 make test
 
-# 2. Run deterministic offline adversarial benchmark (56 attacks + 16 benign controls = 72 cases, 216 runs)
+# - Run deterministic offline adversarial benchmark (56 attacks + 16 benign controls = 72 cases, 216 runs)
 make benchmark
 
-# 3. Audit frontend production bundle and source code for secret leaks
+# - Audit frontend production bundle and source code for secret leaks
 make scan-secrets
 
-# 4. Verify multi-tenant demo sandbox isolation end-to-end (two concurrent sessions)
+# - Verify multi-tenant demo sandbox isolation end-to-end (two concurrent sessions)
 make verify-e2e
 
-# 5. Export and cryptographically verify the append-only SHA-256 audit chain offline
+# - Export and cryptographically verify the append-only SHA-256 audit chain offline
 make verify-export
 
-# 6. Demonstrate active tamper detection by altering an audit event in the database
+# - Demonstrate active tamper detection by altering an audit event in the database
 make tamper-demo
 ```
 
@@ -507,7 +468,7 @@ make tamper-demo
 
 | Verification Gate | Command | Test Cases / Runs | Status | Primary Invariant Proven |
 | :--- | :--- | :---: | :---: | :--- |
-| **Complete Pytest Suite** | `make test` | 81 tests | 🟢 **81 Passed (100%)** | Zero regression across mandates, reservations, webhooks, anchors, MCP, and rate limiters. |
+| **Complete Pytest Suite** | `make test` | 87 tests | 🟢 **87 Passed (100%)** | Zero regression across mandates, reservations, webhooks, anchors, MCP, timeouts, and rate limiters. |
 | **Adversarial Benchmark** | `make benchmark` | 72 cases (216 runs) | 🟢 **0.0% Protected ASR** | 100% of prompt injections, spec spoofing, and quantity tampering blocked before PayPal. 0% FPR. |
 | **Bundle Secrets Scanner** | `make scan-secrets` | Full `dist/` & `src/` | 🟢 **Zero Leaks Found** | No administrative API keys, PayPal secrets, or `localStorage` credential storage in client bundle. |
 | **Route Auth Regression** | `test_mandate.py` | Full route table | 🟢 **100% Protected** | All mutating endpoints require `require_admin_key` or cryptographic session verification. |
@@ -584,13 +545,11 @@ Open `http://localhost:5173` (or the Vite assigned port) to view the console.
 
 ---
 
-## Hackathon Submission & Award Targeting
+## Hackathon Tracks & Capabilities
 
-- **Primary Track:** Best Use of Agentic Commerce ($5,000)
-- **Partner Tracks:** 
-  - Best Use of Channel3 ($1,500)
-  - Best Use of AG Grid / AG Studio ($5,000 / $2,000 / $1,000)
-- **Devpost Submission:** [paypalaihackathon.devpost.com](https://paypalaihackathon.devpost.com)
+- **Primary Track:** Agentic Commerce
+- **Partner Integrations:** Channel3 Catalog API, AG Grid Enterprise-Grade Analytics, PayPal Orders v2 Sandbox
+- **Devpost Project:** [paypalaihackathon.devpost.com](https://paypalaihackathon.devpost.com)
 
 ---
 

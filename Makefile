@@ -1,13 +1,14 @@
 # Intent AI Shopping Firewall — Makefile
 
-.PHONY: benchmark benchmark-gemini benchmark-openai test verify-export tamper-demo scan-secrets verify-e2e help
+.PHONY: cleanroom benchmark benchmark-gemini benchmark-openai test verify-export tamper-demo scan-secrets verify-e2e help
 
 PYTHON ?= backend/venv/bin/python3
 PYTEST ?= backend/venv/bin/pytest
 
 help:
 	@echo "Available commands:"
-	@echo "  make test               Run full 81-test automated pytest verification suite"
+	@echo "  make cleanroom          Run full 6-gate clean-room release verification pipeline"
+	@echo "  make test               Run full 87-test automated pytest verification suite"
 	@echo "  make benchmark          Run deterministic offline adversarial benchmark (CI-ready)"
 	@echo "  make benchmark-gemini   Run live benchmark using Google Gemini API"
 	@echo "  make benchmark-openai   Run live benchmark using OpenAI API"
@@ -15,6 +16,9 @@ help:
 	@echo "  make verify-e2e         Run scripted multi-tenant sandbox isolation verification"
 	@echo "  make verify-export      Export and verify the cryptographic audit chain offline"
 	@echo "  make tamper-demo        Demonstrate tamper detection by altering an audit event"
+
+cleanroom:
+	bash scripts/verify_cleanroom.sh
 
 benchmark:
 	PYTHONPATH=backend:. $(PYTHON) benchmark/runner.py --mode offline --runs 3

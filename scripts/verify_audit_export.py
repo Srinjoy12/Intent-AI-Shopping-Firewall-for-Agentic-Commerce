@@ -152,17 +152,27 @@ def verify_export_manifest(data: dict[str, Any]) -> bool:
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python scripts/verify_audit_export.py <export_file.json>")
-        sys.exit(1)
-
-    file_path = sys.argv[1]
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception as e:
-        print(f"❌ Failed to read export file '{file_path}': {e}")
-        sys.exit(1)
+    if len(sys.argv) >= 2:
+        file_path = sys.argv[1]
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f"❌ Failed to read export file '{file_path}': {e}")
+            sys.exit(1)
+    else:
+        # No file argument provided: export live chain from database
+        print("No export file passed. Exporting live audit chain from database...")
+        import asyncio
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
+        try:
+            from app.audit import export_audit_chain_signed
+            data = asyncio.run(export_audit_chain_signed())
+        except Exception as e:
+            print(f"❌ Failed to export live audit chain: {e}")
+            print("Usage: python scripts/verify_audit_export.py [path_to_export.json]")
+            sys.exit(1)
 
     is_valid = verify_export_manifest(data)
     sys.exit(0 if is_valid else 1)
