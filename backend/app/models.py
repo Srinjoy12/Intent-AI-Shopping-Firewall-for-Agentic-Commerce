@@ -180,6 +180,7 @@ class VerifyAndPayResponse(BaseModel):
     approval_id: Optional[str] = None
     needs_human_approval: bool = False
     approval_token: Optional[str] = None
+    approval_url: Optional[str] = None
     escalation_reason: Optional[str] = None
 
 

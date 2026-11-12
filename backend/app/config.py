@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     app_env: str = "development"  # "development" | "production" | "test"
     app_mode: str = "demo"  # "demo" | "admin"
     debug: bool = False
+    public_base_url: str = ""  # Base URL for human supervisor approval links
 
     # Database & Storage
     database_path: str = ""

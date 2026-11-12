@@ -328,6 +328,16 @@ async def sanitise_approval_access_logs(request: Request, call_next):
         request.scope["query_string"] = b""
     return response
 
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Enforce production security headers on all responses."""
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
 # ── LLM Adapter & Gateway Setup ───────────────────────────────────────────
 
 _llm_adapter = LLMAdapter()
@@ -2007,6 +2017,14 @@ async def _execute_verify_and_pay_internal(
         required_structured_attributes=mandate.required_attributes,
     )
 
+    approval_url = None
+    if approval_token:
+        settings = get_settings()
+        base = (settings.public_base_url or os.environ.get("PUBLIC_BASE_URL", "")).rstrip("/")
+        if not base:
+            base = "http://127.0.0.1:8000"
+        approval_url = f"{base}/api/approvals/action?token={approval_token}"
+
     resp = VerifyAndPayResponse(
         evaluation=evaluation,
         agent_request=intent_req,
@@ -2015,6 +2033,7 @@ async def _execute_verify_and_pay_internal(
         approval_id=approval_id,
         needs_human_approval=needs_human_approval,
         approval_token=approval_token,
+        approval_url=approval_url,
         escalation_reason=escalation_reason,
     )
 

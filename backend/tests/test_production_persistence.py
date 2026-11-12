@@ -21,6 +21,7 @@ import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 from httpx import AsyncClient, ASGITransport
+from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.mandate import (
@@ -150,27 +151,39 @@ def test_production_passes_with_strong_keys():
 def test_dev_mode_ephemeral_key_source(caplog):
     """In dev mode without env key, key_source must report 'generated' and log warning."""
     import app.mandate as mandate_module
-    mandate_module._DEV_KEY = None
-    mandate_module._KEY_SOURCE = "generated"
+    old_dev_key = mandate_module._DEV_KEY
+    old_source = mandate_module._KEY_SOURCE
+    try:
+        mandate_module._DEV_KEY = None
+        mandate_module._KEY_SOURCE = "generated"
 
-    with patch.dict(os.environ, {"MANDATE_SIGNING_KEY": ""}):
-        with caplog.at_level(logging.WARNING):
-            key = mandate_module.get_signing_key()
-            source = mandate_module.get_key_source()
-            assert key is not None
-            assert source == "generated"
-            assert "MANDATE_SIGNING_KEY not configured in environment" in caplog.text
+        with patch.dict(os.environ, {"MANDATE_SIGNING_KEY": ""}):
+            with caplog.at_level(logging.WARNING):
+                key = mandate_module.get_signing_key()
+                source = mandate_module.get_key_source()
+                assert key is not None
+                assert source == "generated"
+                assert "MANDATE_SIGNING_KEY not configured in environment" in caplog.text
+    finally:
+        mandate_module._DEV_KEY = old_dev_key
+        mandate_module._KEY_SOURCE = old_source
 
 
 def test_configured_env_key_source():
     """When MANDATE_SIGNING_KEY is provided in env, key_source must report 'env'."""
     import app.mandate as mandate_module
-    sample_key = secrets.token_hex(32)
-    with patch.dict(os.environ, {"MANDATE_SIGNING_KEY": sample_key}):
-        key = mandate_module.get_signing_key()
-        source = mandate_module.get_key_source()
-        assert key is not None
-        assert source == "env"
+    old_dev_key = mandate_module._DEV_KEY
+    old_source = mandate_module._KEY_SOURCE
+    try:
+        sample_key = secrets.token_hex(32)
+        with patch.dict(os.environ, {"MANDATE_SIGNING_KEY": sample_key}):
+            key = mandate_module.get_signing_key()
+            source = mandate_module.get_key_source()
+            assert key is not None
+            assert source == "env"
+    finally:
+        mandate_module._DEV_KEY = old_dev_key
+        mandate_module._KEY_SOURCE = old_source
 
 
 # ── Health Endpoint Telemetry & Secret Leak Protection ───────────────────────
@@ -266,3 +279,75 @@ async def test_startup_concurrency_warning(caplog):
                 pass
             assert "CONCURRENCY WARNING" in caplog.text
             assert "WEB_CONCURRENCY=4 > 1 with SQLite" in caplog.text
+
+
+def test_same_origin_security_headers_and_public_base_url():
+    """
+    Phase 2 Verification:
+    1. All responses include security headers (nosniff, DENY, strict-origin-when-cross-origin).
+    2. PUBLIC_BASE_URL is respected when constructing approval URLs.
+    3. SPA index.html is served for root and client routes (same-origin serving).
+    """
+    client = TestClient(app)
+
+    # 1. Security Headers
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    assert res.headers.get("X-Content-Type-Options") == "nosniff"
+    assert res.headers.get("X-Frame-Options") == "DENY"
+    assert res.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+
+    # 2. Same-origin SPA serving
+    spa_res = client.get("/")
+    assert spa_res.status_code == 200
+    assert "html" in spa_res.headers.get("content-type", "").lower()
+
+    # 3. PUBLIC_BASE_URL in approval flow
+    with patch.dict(os.environ, {"PUBLIC_BASE_URL": "https://gateway.intent.example.com"}):
+        from app.config import get_settings
+        from app.mandate import sign_mandate, get_signing_key
+        from app.db import save_mandate
+        from datetime import datetime, timezone, timedelta
+        import asyncio
+
+        get_settings.cache_clear()
+        try:
+            # Create a dedicated high-limit mandate to avoid daily budget exhaustion from prior tests
+            test_man = sign_mandate({
+                "mandate_id": "man_high_val_test",
+                "owner_id": "user_high_val",
+                "agent_id": "agent_demo_01",
+                "max_order_total": "2000.00",
+                "auto_approve_under": "1000.00",
+                "max_quantity": 1,
+                "required_attributes": {"ram": "16GB", "storage": "512GB"},
+                "allowed_domains": ["newegg.com"],
+                "required_availability": "InStock",
+                "daily_limit": "5000.00",
+                "weekly_limit": "10000.00",
+                "per_merchant_limit": "3000.00",
+                "max_orders_per_hour": 10,
+                "expires_at": (datetime.now(timezone.utc) + timedelta(days=1)).isoformat(),
+            }, get_signing_key())
+            asyncio.run(save_mandate(test_man))
+
+            # Create a high-value order that triggers supervisor approval
+            auth_headers = {"X-Agent-Key": "demo_agent_secret_test_key"}
+            high_val_res = client.post(
+                "/api/verify-and-pay",
+                json={
+                    "mandate_id": "man_high_val_test",
+                    "product_id": "KXUKS23",  # $1,099.99 > $1,000 threshold
+                    "merchant_domain": "newegg.com",
+                    "quantity": 1,
+                    "agent_reasoning": "High value approval test",
+                },
+                headers=auth_headers,
+            )
+            assert high_val_res.status_code == 200
+            data = high_val_res.json()
+            assert data["needs_human_approval"] is True
+            assert data["approval_url"] is not None
+            assert data["approval_url"].startswith("https://gateway.intent.example.com/api/approvals/action?token=")
+        finally:
+            get_settings.cache_clear()
