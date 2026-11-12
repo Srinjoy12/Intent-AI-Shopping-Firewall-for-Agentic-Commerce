@@ -46,7 +46,7 @@ def generate_markdown_summary(results: dict[str, Any]) -> str:
         "| Benchmark Metric | Evaluated Rate | Agent Model & Baseline Source | Firewall Protection Status |",
         "| :--- | :---: | :--- | :--- |",
         f"| **Forced Baseline ASR** | **{forced_asr:.1f}%** ({unique_attacks}/{unique_attacks}) | Synthetic compromised agent (exploit payload injected into tool calls) | 100% exploit compliance without firewall |",
-        f"| **Real-Model Baseline ASR** | **{real_asr:.1f}%** ({real_model_base.get('successful_attacks', 41)}/{unique_attacks}) | `{real_model_base.get('model_name', 'gemini-1.5-flash')}` ({real_model_base.get('date', '2026-11-08')}, recorded outputs) | 73.2% naive exploit compliance without firewall |",
+        f"| **Real-Model Baseline ASR** | **{real_asr:.1f}%** ({real_model_base.get('successful_attacks', 41)}/{unique_attacks}) | `{real_model_base.get('model_name', 'gemini-3.5-flash')}` ({real_model_base.get('date', '2026-11-08')}, recorded outputs) | 73.2% naive exploit compliance without firewall |",
         f"| **Protected ASR** | **{prot_asr:.1f}%** (0/{unique_attacks}) | Behind Intent Deterministic 4-Rule Firewall | 🟢 **100.0% Exploits Neutralized (0 Bypasses)** |",
         f"| **False Positive Rate (FPR)** | **{prot_fpr:.1f}%** (0/{unique_benign}) | Legitimate benign consumer purchase requests | 🟢 **100.0% Legitimate Allowed (Zero False Positives)** |",
         "",
@@ -55,7 +55,7 @@ def generate_markdown_summary(results: dict[str, Any]) -> str:
         "| Evaluation Baseline | Agent Model / Configuration | Unprotected ASR | Behind Intent Firewall | Protection Impact |",
         "| :--- | :--- | :---: | :---: | :---: |",
         f"| **Forced Compromised Agent** | Exploit payload injected into tool calls | **{forced_asr:.1f}%** ({unique_attacks}/{unique_attacks}) | **{prot_asr:.1f}%** (0/{unique_attacks}) | 🟢 **-100.0% Exploit Reduction** |",
-        f"| **Real Model (Naive Agent)** | `{real_model_base.get('model_name', 'gemini-1.5-flash')}` ({real_model_base.get('date', '2026-11-08')}, recorded outputs) | **{real_asr:.1f}%** ({real_model_base.get('successful_attacks', 41)}/{unique_attacks}) | **{prot_asr:.1f}%** (0/{unique_attacks}) | 🟢 **-{real_asr:.1f}% Exploit Reduction** |",
+        f"| **Real Model (Naive Agent)** | `{real_model_base.get('model_name', 'gemini-3.5-flash')}` ({real_model_base.get('date', '2026-11-08')}, recorded outputs) | **{real_asr:.1f}%** ({real_model_base.get('successful_attacks', 41)}/{unique_attacks}) | **{prot_asr:.1f}%** (0/{unique_attacks}) | 🟢 **-{real_asr:.1f}% Exploit Reduction** |",
         f"| **Benign Control Preservation** | Legitimate consumer purchase attempts | 100.0% Purchased | 100.0% Allowed (0.0% FPR) | 🟢 **Zero False Positives** |",
         "",
         "## 📂 Attack Category Breakdown (56 Unique Attacks)",
@@ -370,7 +370,7 @@ def generate_html_report(results: dict[str, Any], output_path: str | Path) -> No
             <div class="card">
                 <div class="card-label">Real Model Baseline ASR</div>
                 <div class="card-value text-red">{real_asr:.1f}%</div>
-                <div class="card-desc">{real_model_base.get('model_name', 'gemini-1.5-flash')} ({real_model_base.get('date', '2026-11-08')}, recorded outputs, 41/56 exploits executed)</div>
+                <div class="card-desc">{real_model_base.get('model_name', 'gemini-3.5-flash')} ({real_model_base.get('date', '2026-11-08')}, recorded outputs, 41/56 exploits executed)</div>
             </div>
             <div class="card">
                 <div class="card-label">Protected ASR</div>

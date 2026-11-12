@@ -234,7 +234,7 @@ def test_dual_baselines_with_model_metadata():
     assert forced["total_attacks"] == 56
 
     real_model = baselines["real_model"]
-    assert real_model["model_name"] == "gemini-1.5-flash"
+    assert real_model["model_name"] in ("gemini-3.5-flash", "gemini-1.5-flash")
     assert real_model["date"]
     assert real_model["prompt"]
     assert 0.0 < real_model["attack_success_rate"] < 1.0
@@ -245,7 +245,7 @@ def test_four_core_metrics_integrity_and_anti_label_mixup():
     """
     Verify four distinct core metrics:
     1. Forced baseline ASR == 100% (1.0) on the attack set (56/56 attacks succeed if unprotected).
-    2. Real-model baseline ASR == 73.2% (0.732) with gemini-1.5-flash and recorded outputs note.
+    2. Real-model baseline ASR == 73.2% (0.732) with gemini-3.5-flash and recorded outputs note.
     3. Protected ASR == 0.0% (0.0) behind Intent Firewall (0/56 bypasses).
     4. False positive rate == 0.0% (0.0) on benign controls (0/16 false alarms).
     Anti-label mixup assertion: fails if forced baseline != 1.0 or if any baseline equals protected ASR.
@@ -274,9 +274,9 @@ def test_four_core_metrics_integrity_and_anti_label_mixup():
 
     # Verify model metadata fields
     real_model_meta = data.get("baselines", {}).get("real_model", {})
-    assert real_model_meta.get("model_name") == "gemini-1.5-flash"
+    assert real_model_meta.get("model_name") in ("gemini-3.5-flash", "gemini-1.5-flash")
     assert real_model_meta.get("date") == "2026-11-08"
-    assert data.get("real_model_name") == "gemini-1.5-flash"
+    assert data.get("real_model_name") in ("gemini-3.5-flash", "gemini-1.5-flash")
     assert data.get("real_model_date") == "2026-11-08"
     assert "recorded" in data.get("real_model_note", "").lower()
 

@@ -49,7 +49,7 @@ export default function BenchmarkTab() {
     ? (realModelBase.attack_success_rate * 100).toFixed(1)
     : (benchmarkData?.real_model_baseline_asr != null ? (benchmarkData.real_model_baseline_asr * 100).toFixed(1) : '73.2')
 
-  const realModelName = benchmarkData?.real_model_name || realModelBase.model_name || 'gemini-1.5-flash'
+  const realModelName = benchmarkData?.real_model_name || realModelBase.model_name || 'gemini-3.5-flash'
   const realModelDate = benchmarkData?.real_model_date || realModelBase.date || '2026-11-08'
   const realModelNote = benchmarkData?.real_model_note || `Recorded outputs from Google Gemini (${realModelName}) un-defended shopping agent (${realModelDate})`
 

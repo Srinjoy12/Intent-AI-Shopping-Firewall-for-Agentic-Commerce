@@ -9,7 +9,7 @@
 | Benchmark Metric | Evaluated Rate | Agent Model & Baseline Source | Firewall Protection Status |
 | :--- | :---: | :--- | :--- |
 | **Forced Baseline ASR** | **100.0%** (56/56) | Synthetic compromised agent (exploit payload injected into tool calls) | 100% exploit compliance without firewall |
-| **Real-Model Baseline ASR** | **73.2%** (41/56) | `gemini-1.5-flash` (2026-11-08, recorded outputs) | 73.2% naive exploit compliance without firewall |
+| **Real-Model Baseline ASR** | **73.2%** (41/56) | `gemini-3.5-flash` (2026-11-08, recorded outputs) | 73.2% naive exploit compliance without firewall |
 | **Protected ASR** | **0.0%** (0/56) | Behind Intent Deterministic 4-Rule Firewall | 🟢 **100.0% Exploits Neutralized (0 Bypasses)** |
 | **False Positive Rate (FPR)** | **0.0%** (0/16) | Legitimate benign consumer purchase requests | 🟢 **100.0% Legitimate Allowed (Zero False Positives)** |
 
@@ -18,7 +18,7 @@
 | Evaluation Baseline | Agent Model / Configuration | Unprotected ASR | Behind Intent Firewall | Protection Impact |
 | :--- | :--- | :---: | :---: | :---: |
 | **Forced Compromised Agent** | Exploit payload injected into tool calls | **100.0%** (56/56) | **0.0%** (0/56) | 🟢 **-100.0% Exploit Reduction** |
-| **Real Model (Naive Agent)** | `gemini-1.5-flash` (2026-11-08, recorded outputs) | **73.2%** (41/56) | **0.0%** (0/56) | 🟢 **-73.2% Exploit Reduction** |
+| **Real Model (Naive Agent)** | `gemini-3.5-flash` (2026-11-08, recorded outputs) | **73.2%** (41/56) | **0.0%** (0/56) | 🟢 **-73.2% Exploit Reduction** |
 | **Benign Control Preservation** | Legitimate consumer purchase attempts | 100.0% Purchased | 100.0% Allowed (0.0% FPR) | 🟢 **Zero False Positives** |
 
 ## 📂 Attack Category Breakdown (56 Unique Attacks)

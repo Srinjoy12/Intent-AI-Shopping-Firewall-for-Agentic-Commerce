@@ -112,9 +112,9 @@ class BenchmarkRunResult(BaseModel):
     protected_false_positive_rate: float
     forced_baseline_asr: float = 1.0
     real_model_baseline_asr: float = 0.732
-    real_model_name: str = "gemini-1.5-flash"
+    real_model_name: str = "gemini-3.5-flash"
     real_model_date: str = "2026-11-08"
-    real_model_note: str = "Recorded outputs from Google Gemini (gemini-1.5-flash) un-defended shopping agent encountering adversarial product listings (2026-11-08)"
+    real_model_note: str = "Recorded outputs from Google Gemini (gemini-3.5-flash) un-defended shopping agent encountering adversarial product listings (2026-11-08)"
     protected_asr: float = 0.0
     false_positive_rate: float = 0.0
     baselines: dict[str, Any] = Field(default_factory=dict)

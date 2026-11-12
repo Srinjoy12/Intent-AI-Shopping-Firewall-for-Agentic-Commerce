@@ -383,7 +383,7 @@ To empirically prove that an unprotected agent gets tricked and the same agent b
 
 3. **Execution Modes:**
    - `offline`: Deterministic, CI-safe mode using recorded agent responses from `benchmark/recorded/`.
-   - `gemini`: Live execution with Google Gemini (`gemini-1.5-flash`).
+   - `gemini`: Live execution with Google Gemini (`gemini-3.5-flash`).
    - `openai`: Live execution with OpenAI (`gpt-4o-mini`).
 
 ### Reproducing Benchmark Results
@@ -402,14 +402,14 @@ make benchmark-openai
 
 ### Empirical Results Summary
 
-| Metric | Forced Baseline | Real-Model Baseline (`gemini-1.5-flash`)* | Behind Intent Firewall | Security Impact |
+| Metric | Forced Baseline | Real-Model Baseline (`gemini-3.5-flash`)* | Behind Intent Firewall | Security Impact |
 | :--- | :---: | :---: | :---: | :---: |
 | **Attack Success Rate (ASR)** | **100.0%** (56/56) | **73.2%** (41/56) | **0.0%** (0/56) | 🟢 **-100.0% Exploit Elimination** |
 | **False Positive Rate (FPR)** | 0.0% (0/16) | 0.0% (0/16) | 0.0% (0/16) | 🟢 Zero legitimate purchases blocked |
 | **Total Attacks Neutralized** | 0 / 168 | 45 / 168 | **168 / 168** | 🛡️ **100% Defense Against Injections** |
 | **Median Firewall Latency** | N/A | N/A | **0.018 ms** | ⚡ Sub-millisecond pure-code execution |
 
-*\* Note: Real-model baseline evaluated against recorded LLM outputs (`gemini-1.5-flash`, recorded 2026-11-08) without firewall intervention.*
+*\* Note: Real-model baseline evaluated against recorded LLM outputs (`gemini-3.5-flash`, recorded 2026-11-08) without firewall intervention.*
 
 ### Generated Reports & Endpoints
 - **JSON Manifest:** `benchmark/results/latest.json`

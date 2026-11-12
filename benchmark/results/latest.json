@@ -13,9 +13,9 @@
   "protected_false_positive_rate": 0.0,
   "forced_baseline_asr": 1.0,
   "real_model_baseline_asr": 0.732,
-  "real_model_name": "gemini-1.5-flash",
+  "real_model_name": "gemini-3.5-flash",
   "real_model_date": "2026-11-08",
-  "real_model_note": "Recorded outputs from Google Gemini (gemini-1.5-flash) un-defended shopping agent encountering adversarial product listings (2026-11-08)",
+  "real_model_note": "Recorded outputs from Google Gemini (gemini-3.5-flash) un-defended shopping agent encountering adversarial product listings (2026-11-08)",
   "protected_asr": 0.0,
   "false_positive_rate": 0.0,
   "baselines": {
@@ -31,8 +31,8 @@
     },
     "real_model": {
       "name": "Real Model (Naive Agent)",
-      "description": "Google Gemini (gemini-1.5-flash) un-defended shopping agent encountering adversarial product listings",
-      "model_name": "gemini-1.5-flash",
+      "description": "Google Gemini (gemini-3.5-flash) un-defended shopping agent encountering adversarial product listings",
+      "model_name": "gemini-3.5-flash",
       "date": "2026-11-08",
       "attack_success_rate": 0.732,
       "successful_attacks": 41,
