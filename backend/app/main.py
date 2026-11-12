@@ -62,7 +62,12 @@ from app.db import (
 )
 from app.session import (
     require_demo_session,
+    require_demo_session_read_only,
     set_session_cookie,
+    COOKIE_NAME,
+    verify_session_cookie,
+    create_sandbox_for_session,
+    delete_demo_session,
 )
 from app.approvals import (
     create_approval_request,
@@ -481,9 +486,9 @@ async def update_policy(
         "required_attributes": policy.required_structured_attributes or {},
         "allowed_domains": getattr(policy, "allowed_merchant_domains", None) or getattr(policy, "allowed_domains", None) or [],
         "required_availability": policy.required_availability,
-        "daily_limit": "2000.00",
-        "weekly_limit": "5000.00",
-        "per_merchant_limit": "1000.00",
+        "daily_limit": "10000.00",
+        "weekly_limit": "25000.00",
+        "per_merchant_limit": "5000.00",
         "max_orders_per_hour": 5,
         "issued_at": now.isoformat(),
         "expires_at": expires.isoformat(),
@@ -801,29 +806,52 @@ async def handle_paypal_webhook(request: Request):
 async def get_benchmark_latest():
     """
     Return the latest adversarial benchmark evaluation results.
-    Loads benchmark/results/latest.json or executes deterministic offline evaluation if missing.
+    Loads benchmark/results/latest.json or bundled backend fixture fallback.
     """
     from pathlib import Path
     import sys
 
-    project_root = Path(__file__).resolve().parent.parent.parent
-    if str(project_root) not in sys.path:
-        sys.path.insert(0, str(project_root))
+    current_file = Path(__file__).resolve()
+    # Candidate paths for pre-generated benchmark results across local, Docker, and Render layouts
+    candidate_paths = [
+        current_file.parent.parent.parent / "benchmark" / "results" / "latest.json",  # local dev: <root>/benchmark/results/latest.json
+        current_file.parent.parent / "benchmark" / "results" / "latest.json",         # docker: /app/benchmark/results/latest.json
+        Path("/app/benchmark/results/latest.json"),                                    # docker absolute
+        current_file.parent / "benchmark_latest.json",                                 # bundled backend fixture fallback
+        Path("./benchmark/results/latest.json"),                                       # cwd fallback
+    ]
 
-    results_path = project_root / "benchmark" / "results" / "latest.json"
-    if not results_path.is_file():
-        from benchmark.runner import BenchmarkRunner
-        runner = BenchmarkRunner(
-            attacks_path=str(project_root / "benchmark" / "attacks.yaml"),
-            mode="offline",
-            runs_per_case=1,
-            results_dir=str(project_root / "benchmark" / "results"),
-        )
-        res = runner.run_all()
-        return res.model_dump()
+    for p in candidate_paths:
+        if p.is_file():
+            try:
+                with open(p, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.warning("Failed reading benchmark results from %s: %s", p, e)
 
-    with open(results_path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    # If static file not found, attempt to execute deterministic offline runner if available
+    try:
+        project_root = current_file.parent.parent.parent
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+        attacks_path = project_root / "benchmark" / "attacks.yaml"
+        if attacks_path.is_file():
+            from benchmark.runner import BenchmarkRunner
+            runner = BenchmarkRunner(
+                attacks_path=str(attacks_path),
+                mode="offline",
+                runs_per_case=1,
+                results_dir=str(project_root / "benchmark" / "results"),
+            )
+            res = runner.run_all()
+            return res.model_dump()
+    except Exception as e:
+        logger.error("Failed executing offline benchmark runner: %s", e)
+
+    raise HTTPException(
+        status_code=503,
+        detail="Benchmark dataset unavailable. Please run `make benchmark` to generate benchmark/results/latest.json.",
+    )
 
 
 # ── Human Approval Channel & Agent Kill Switch Routes ───────────────────────
@@ -2517,7 +2545,7 @@ async def get_demo_session_endpoint(
 
 @app.get("/api/demo/mandate")
 async def get_demo_mandate_endpoint(
-    session: dict[str, Any] = Depends(require_demo_session),
+    session: dict[str, Any] = Depends(require_demo_session_read_only),
 ):
     """Return the caller's verified session mandate and policy_hash."""
     mandate = await get_mandate_by_id(session["mandate_id"])
@@ -2746,7 +2774,7 @@ async def demo_resume_agent(session: dict[str, Any] = Depends(require_demo_sessi
 
 
 @app.get("/api/demo/agent-status")
-async def demo_get_agent_status(session: dict[str, Any] = Depends(require_demo_session)):
+async def demo_get_agent_status(session: dict[str, Any] = Depends(require_demo_session_read_only)):
     """Get kill-switch status for calling session's agent."""
     agent_id = session["agent_id"]
     paused = await is_agent_paused(agent_id)
@@ -2759,7 +2787,7 @@ async def demo_get_agent_status(session: dict[str, Any] = Depends(require_demo_s
 
 
 @app.get("/api/demo/approvals/pending")
-async def demo_list_pending_approvals(session: dict[str, Any] = Depends(require_demo_session)):
+async def demo_list_pending_approvals(session: dict[str, Any] = Depends(require_demo_session_read_only)):
     """List pending approvals strictly belonging to the calling session."""
     return await list_pending_approvals(session_id=session["session_id"])
 
@@ -2896,7 +2924,7 @@ async def demo_refund_paypal_capture(
 @app.get("/api/demo/attempts")
 async def demo_get_attempts(
     limit: int = 100,
-    session: dict[str, Any] = Depends(require_demo_session),
+    session: dict[str, Any] = Depends(require_demo_session_read_only),
 ):
     """Get past verification attempts for the calling session only."""
     return await get_attempts(limit=limit, session_id=session["session_id"])
@@ -2904,7 +2932,7 @@ async def demo_get_attempts(
 
 @app.get("/api/demo/analytics")
 async def demo_get_analytics(
-    session: dict[str, Any] = Depends(require_demo_session),
+    session: dict[str, Any] = Depends(require_demo_session_read_only),
 ):
     """Get aggregated stats and recent attempts for the calling session only."""
     summary = await get_analytics_summary(session_id=session["session_id"])
@@ -2912,6 +2940,33 @@ async def demo_get_analytics(
     return {
         "summary": summary,
         "recent_attempts": recent,
+    }
+
+
+@app.post("/api/demo/reset")
+async def demo_reset_session(request: Request, response: Response):
+    """
+    Reset demo sandbox: clears current session and provisions a brand-new
+    isolated sandbox session with fresh limits and newly signed mandate.
+    """
+    raw_cookie = request.cookies.get(COOKIE_NAME)
+    old_session_id = verify_session_cookie(raw_cookie)
+    if old_session_id:
+        try:
+            await delete_demo_session(old_session_id)
+        except Exception as e:
+            logger.warning("Error deleting old session %s: %s", old_session_id, e)
+
+    new_id = f"sess_{uuid.uuid4().hex[:12]}"
+    new_session = await create_sandbox_for_session(new_id)
+    set_session_cookie(response, new_id)
+    return {
+        "status": "RESET",
+        "message": "Demo sandbox session has been reset with a fresh quota.",
+        "session_id": new_session["session_id"],
+        "agent_id": new_session["agent_id"],
+        "mandate_id": new_session["mandate_id"],
+        "request_count": 0,
     }
 
 

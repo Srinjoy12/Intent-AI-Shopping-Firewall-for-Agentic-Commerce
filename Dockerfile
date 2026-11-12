@@ -34,11 +34,14 @@ RUN pip install --no-cache-dir -r ./backend/requirements.txt
 # Copy backend application source
 COPY backend/ ./backend/
 
+# Copy benchmark suite and evaluation results into /app/benchmark
+COPY benchmark/ ./benchmark/
+
 # Copy compiled frontend from Stage 1 into /app/frontend/dist
 COPY --from=frontend-builder /build/dist ./frontend/dist
 
 # Default environment configuration
-ENV PYTHONPATH=/app/backend \
+ENV PYTHONPATH=/app/backend:/app \
     DATABASE_PATH=/var/data/intent.db \
     APP_ENV=production \
     APP_MODE=demo \
