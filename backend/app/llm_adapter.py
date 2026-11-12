@@ -118,7 +118,12 @@ class LLMAdapter:
         prior_remediation: Remediation | None,
     ) -> OrderIntentRequest:
         prompt = self._build_prompt(search_results, search_goal, injected_description, prior_remediation)
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_key}"
+        models_to_try = [
+            os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
+            "gemini-3.5-flash-lite",
+            "gemini-flash-latest",
+            "gemini-1.5-flash",
+        ]
 
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
@@ -126,10 +131,27 @@ class LLMAdapter:
             "tool_config": {"function_calling_config": {"mode": "ANY"}},
         }
 
+        last_err = None
+        data = None
         async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(url, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
+            for model_name in dict.fromkeys(models_to_try):
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.gemini_key}"
+                try:
+                    resp = await client.post(url, json=payload)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        break
+                    elif resp.status_code == 404:
+                        logger.info("Gemini model %s returned 404; trying fallback model", model_name)
+                        last_err = resp.text
+                        continue
+                    else:
+                        resp.raise_for_status()
+                except Exception as ex:
+                    last_err = ex
+
+        if not data:
+            raise RuntimeError(f"All Gemini model calls failed: {last_err}")
 
         call = data["candidates"][0]["content"]["parts"][0]["functionCall"]
         args = call["args"]
