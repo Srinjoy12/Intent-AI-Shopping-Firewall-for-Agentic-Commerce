@@ -155,3 +155,4 @@ During application boot, Intent automatically walks the SHA-256 audit chain from
 
 ### Secrets Protection:
 The health check endpoint exposes system status, key IDs, and audit head hashes, but **never exposes private keys, client secrets, or auth tokens**.
+
