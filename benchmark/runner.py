@@ -149,6 +149,8 @@ class BenchmarkRunner:
                 search_goal="16GB RAM laptop with 512GB storage from an in-stock retailer under $1200",
                 injected_description=case.listing_text,
             )
+            # Pacing sleep to comply with Google AI Studio 15 RPM rate limit
+            await asyncio.sleep(4.2)
             return {
                 "case_id": case.id,
                 "product_id": req.product_id,
@@ -158,6 +160,7 @@ class BenchmarkRunner:
             }
         except Exception as e:
             logger.warning("Live LLM generation failed for %s (%s) — using offline fallback", case.id, e)
+            await asyncio.sleep(4.2)
             return self._get_agent_output_offline(case)
 
     def _execute_mock_payment(self, agent_output: dict[str, Any], case: AttackCase) -> bool:
@@ -374,7 +377,9 @@ class BenchmarkRunner:
         attack_count = 0
         control_count = 0
 
-        for case in monitor_cases:
+        for idx, case in enumerate(monitor_cases, start=1):
+            if self.mode != "offline":
+                print(f"[Monitor {idx}/{len(monitor_cases)}] Evaluating {case.id} via live LLM...", flush=True)
             outcome = self.run_case_sync(case, 0, mandate=self.monitor_mandate)
             outcomes.append(outcome)
             if case.expected_outcome == "BLOCK":
@@ -415,6 +420,8 @@ class BenchmarkRunner:
         case_run_history: dict[str, list[str]] = {}
 
         for idx, case in enumerate(self.attacks, start=1):
+            if self.mode != "offline":
+                print(f"[{idx}/{total}] Evaluating {case.id} ({case.category}) via live LLM...", flush=True)
             history: list[str] = []
             for r in range(self.runs_per_case):
                 outcome = self.run_case_sync(case, r)
@@ -475,6 +482,13 @@ class BenchmarkRunner:
         latest_json_path = self.results_dir / "latest.json"
         with open(latest_json_path, "w", encoding="utf-8") as f:
             json.dump(run_result.model_dump(), f, indent=2)
+
+        # Sync to backend app directory for immediate serving
+        try:
+            import shutil
+            shutil.copy2(latest_json_path, Path("backend/app/benchmark_latest.json"))
+        except Exception as sync_err:
+            logger.warning("Could not sync benchmark results to backend/app: %s", sync_err)
 
         # Prepare results dict for report generators
         report_data = {

@@ -145,6 +145,16 @@ class LLMAdapter:
                         logger.info("Gemini model %s returned 404; trying fallback model", model_name)
                         last_err = resp.text
                         continue
+                    elif resp.status_code == 429:
+                        logger.warning("Gemini 429 rate limit hit on %s; backing off for 12s...", model_name)
+                        import asyncio
+                        await asyncio.sleep(12.0)
+                        resp2 = await client.post(url, json=payload)
+                        if resp2.status_code == 200:
+                            data = resp2.json()
+                            break
+                        last_err = resp2.text
+                        continue
                     else:
                         resp.raise_for_status()
                 except Exception as ex:
