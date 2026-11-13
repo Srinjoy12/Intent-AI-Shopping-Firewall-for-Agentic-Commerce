@@ -159,9 +159,14 @@ export default function App() {
         ? `/api/demo/run-preset/${presetId}`
         : `/api/run-preset/${presetId}`
 
-      const res = await fetch(endpoint, {
+      let res = await fetch(endpoint, {
         method: 'POST',
       })
+
+      if (res.status === 410) {
+        await handleResetSandbox()
+        res = await fetch(endpoint, { method: 'POST' })
+      }
 
       if (!res.ok) {
         if (res.status === 429) {
@@ -202,7 +207,7 @@ export default function App() {
         ? '/api/demo/run-agent'
         : '/api/agent/run'
 
-      const res = await fetch(endpoint, {
+      let res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -215,6 +220,21 @@ export default function App() {
           quantity: quantity,
         }),
       })
+
+      if (res.status === 410) {
+        await handleResetSandbox()
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            policy_id: policy?.policy_id || 'demo_mandate_01',
+            user_goal: `Purchase ${currentProduct?.title || 'laptop'} with 16GB RAM under $1,200 limit`,
+            merchant_domain: currentProduct?.offers?.[0]?.domain || 'staples.com',
+            prompt_injection: injectionText,
+            quantity: quantity,
+          }),
+        })
+      }
 
       if (!res.ok) {
         if (res.status === 429) {
@@ -255,7 +275,7 @@ export default function App() {
         ? '/api/demo/verify-and-pay'
         : '/api/verify-and-pay'
 
-      const res = await fetch(endpoint, {
+      let res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -269,6 +289,22 @@ export default function App() {
           agent_reasoning: 'Agent selected compliant Lenovo IdeaPad Slim 5i (16GB RAM, $749.99) matching all policy rules.',
         }),
       })
+
+      if (res.status === 410) {
+        await handleResetSandbox()
+        res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mandate_id: mandate?.mandate_id || 'demo_mandate_01',
+            policy_id: policy?.policy_id || 'demo_mandate_01',
+            product_id: 'pPB4LGu',
+            merchant_domain: 'staples.com',
+            quantity: 1,
+            agent_reasoning: 'Agent selected compliant Lenovo IdeaPad Slim 5i (16GB RAM, $749.99) matching all policy rules.',
+          }),
+        })
+      }
 
       if (!res.ok) {
         if (res.status === 429) {

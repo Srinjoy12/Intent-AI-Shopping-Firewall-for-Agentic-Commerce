@@ -77,9 +77,12 @@ export default function AnalyticsDashboard({ analytics, attempts = [], onRefresh
       if (res.ok) {
         const data = await res.json()
         setPendingApprovals(Array.isArray(data) ? data : [])
+      } else {
+        setPendingApprovals([])
       }
     } catch (err) {
-      console.error('Failed to fetch pending approvals:', err)
+      console.warn('Pending approvals note:', err)
+      setPendingApprovals([])
     }
   }
 

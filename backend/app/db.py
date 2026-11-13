@@ -7,7 +7,7 @@ import hmac
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any, Optional
 
@@ -929,16 +929,20 @@ async def update_demo_session_activity(
     request_count: int,
     window_start: str,
 ) -> None:
-    """Update last active timestamp, request count and window start for rate limiting."""
-    now_iso = datetime.now(timezone.utc).isoformat()
+    """Update last active timestamp, request count, window start, and extend expires_at."""
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+    from app.config import get_settings
+    settings = get_settings()
+    new_expires_iso = (now + timedelta(hours=settings.session_ttl_hours)).isoformat()
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
             """
             UPDATE demo_sessions
-            SET last_active_at = ?, request_count = ?, window_start = ?
+            SET last_active_at = ?, request_count = ?, window_start = ?, expires_at = ?
             WHERE session_id = ?
             """,
-            (now_iso, request_count, window_start, session_id),
+            (now_iso, request_count, window_start, new_expires_iso, session_id),
         )
         await db.commit()
 

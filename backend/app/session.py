@@ -203,16 +203,24 @@ async def get_or_create_demo_session(request: Request, response: Response) -> di
                 expires_at = now - timedelta(seconds=1)
 
             if now >= expires_at:
-                logger.warning("Sandbox session %s is expired; deleting and rejecting", session_id)
+                logger.warning("Sandbox session %s is expired; deleting", session_id)
                 await delete_demo_session(session_id)
-                cookie_del = f"{COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax; HttpOnly"
-                if is_secure:
-                    cookie_del += "; Secure"
-                raise HTTPException(
-                    status_code=status.HTTP_410_GONE,
-                    detail="SANDBOX_EXPIRED: Demo sandbox session has expired. Reload page for a fresh sandbox.",
-                    headers={"Set-Cookie": cookie_del},
-                )
+                if request.url.path == "/api/demo/session":
+                    cookie_del = f"{COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax; HttpOnly"
+                    if is_secure:
+                        cookie_del += "; Secure"
+                    raise HTTPException(
+                        status_code=status.HTTP_410_GONE,
+                        detail="SANDBOX_EXPIRED: Demo sandbox session has expired. Reload page for a fresh sandbox.",
+                        headers={"Set-Cookie": cookie_del},
+                    )
+                # For all functional endpoints (presets, attempts, analytics, approvals, orders):
+                # Seamlessly provision a fresh session so active user workflows never crash or brick!
+                logger.info("Session %s expired on %s; provisioning fresh sandbox seamlessly", session_id, request.url.path)
+                new_id = f"sess_{uuid.uuid4().hex[:12]}"
+                new_session = await create_sandbox_for_session(new_id)
+                set_session_cookie(response, new_id)
+                return new_session
 
             # Auto-healing mandate signature across server restarts
             mandate_id = session_data.get("mandate_id")

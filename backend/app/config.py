@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     # Per-Visitor Demo Sandbox
     session_secret: str = "dev_session_secret_change_me_in_production"
-    session_ttl_hours: int = 2
+    session_ttl_hours: int = 24
     session_rate_limit_per_hour: int = 30
 
     model_config = {
