@@ -165,6 +165,12 @@ export default function AnalyticsDashboard({ analytics, attempts = [], onRefresh
   }
 
   useEffect(() => {
+    if (onRefresh) onRefresh()
+    handleVerifyChain()
+    fetchPendingApprovals()
+  }, [])
+
+  useEffect(() => {
     handleVerifyChain()
     fetchPendingApprovals()
   }, [attempts])
@@ -438,6 +444,18 @@ export default function AnalyticsDashboard({ analytics, attempts = [], onRefresh
             <button
               type="button"
               className="btn btn-secondary btn-sm"
+              onClick={() => {
+                if (onRefresh) onRefresh()
+                handleVerifyChain()
+                fetchPendingApprovals()
+              }}
+              title="Reload latest attempts and chain from firewall database"
+            >
+              Refresh ledger
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
               onClick={handleVerifyChain}
               disabled={verifying}
             >
@@ -466,7 +484,7 @@ export default function AnalyticsDashboard({ analytics, attempts = [], onRefresh
             </button>
           </div>
         ) : (
-          <div className="ag-theme-quartz ledger-grid-container">
+          <div className="ag-theme-quartz ledger-grid-container" style={{ height: 480, width: '100%', minHeight: 440 }}>
             <AgGridReact
               theme={gridTheme}
               rowData={rowData}
