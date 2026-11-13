@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import logging
+import os
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
@@ -157,8 +158,12 @@ def set_session_cookie(response: Response, session_id: str) -> None:
     """Set signed HttpOnly, SameSite=Lax cookie on HTTP response."""
     settings = get_settings()
     signed_val = sign_session_id(session_id)
-    # Secure flag in production HTTPS; False in local dev/demo
-    is_secure = (settings.app_mode == "admin" and not getattr(settings, "debug", True))
+    # Secure flag in production HTTPS / Render; False in local dev
+    is_secure = bool(
+        os.getenv("RENDER")
+        or getattr(settings, "environment", "") == "production"
+        or (settings.app_mode == "admin" and not getattr(settings, "debug", True))
+    )
     response.set_cookie(
         key=COOKIE_NAME,
         value=signed_val,
@@ -173,8 +178,15 @@ def set_session_cookie(response: Response, session_id: str) -> None:
 async def get_or_create_demo_session(request: Request, response: Response) -> dict[str, Any]:
     """
     Retrieve existing valid session or provision a new isolated sandbox session.
-    If the session is expired, cleans it up and raises HTTP 410 Gone.
+    If the session record exists in DB but is expired, cleans it up and raises HTTP 410 Gone.
+    If the session is not in DB (e.g. server redeployed or restarted), seamlessly provisions a fresh sandbox.
     """
+    settings = get_settings()
+    is_secure = bool(
+        os.getenv("RENDER")
+        or getattr(settings, "environment", "") == "production"
+        or (settings.app_mode == "admin" and not getattr(settings, "debug", True))
+    )
     raw_cookie = request.cookies.get(COOKIE_NAME)
     session_id = verify_session_cookie(raw_cookie)
 
@@ -193,10 +205,13 @@ async def get_or_create_demo_session(request: Request, response: Response) -> di
             if now >= expires_at:
                 logger.warning("Sandbox session %s is expired; deleting and rejecting", session_id)
                 await delete_demo_session(session_id)
-                response.delete_cookie(COOKIE_NAME, path="/")
+                cookie_del = f"{COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax; HttpOnly"
+                if is_secure:
+                    cookie_del += "; Secure"
                 raise HTTPException(
                     status_code=status.HTTP_410_GONE,
                     detail="SANDBOX_EXPIRED: Demo sandbox session has expired. Reload page for a fresh sandbox.",
+                    headers={"Set-Cookie": cookie_del},
                 )
 
             # Auto-healing mandate signature across server restarts
@@ -218,12 +233,13 @@ async def get_or_create_demo_session(request: Request, response: Response) -> di
 
             return session_data
         else:
-            # Cookie was signed but session not in DB (possibly already cleaned up or expired)
-            response.delete_cookie(COOKIE_NAME, path="/")
-            raise HTTPException(
-                status_code=status.HTTP_410_GONE,
-                detail="SANDBOX_EXPIRED: Demo sandbox session has expired. Reload page for a fresh sandbox.",
-            )
+            # Cookie was signed but session record is absent from DB (server restarted/redeployed).
+            # Seamlessly provision a fresh isolated sandbox with a newly signed cookie.
+            logger.info("Session %s not in database (server restart/cleanup); provisioning fresh sandbox", session_id)
+            new_id = f"sess_{uuid.uuid4().hex[:12]}"
+            new_session = await create_sandbox_for_session(new_id)
+            set_session_cookie(response, new_id)
+            return new_session
 
     # First-time visit: generate a new isolated sandbox
     new_id = f"sess_{uuid.uuid4().hex[:12]}"

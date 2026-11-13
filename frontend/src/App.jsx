@@ -60,16 +60,17 @@ export default function App() {
       // 1. Establish/verify demo sandbox session first
       let currentMode = 'demo'
       try {
-        const sessRes = await fetch('/api/demo/session')
+        let sessRes = await fetch('/api/demo/session')
+        if (sessRes.status === 410) {
+          // Sandbox expired: reset cleanly once without recursion
+          await fetch('/api/demo/reset', { method: 'POST' })
+          sessRes = await fetch('/api/demo/session')
+        }
         if (sessRes.ok) {
           const sessData = await sessRes.json()
           currentMode = sessData.app_mode || 'demo'
           setAppMode(currentMode)
           setRateLimitError(null)
-        } else if (sessRes.status === 410) {
-          // Sandbox expired: auto-reset
-          await handleResetSandbox()
-          return
         } else if (sessRes.status === 429) {
           setRateLimitError('Demo rate limit reached (30 transactions/hr). Click "Reset Sandbox" to start a fresh testing session.')
         }
